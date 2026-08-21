@@ -1,0 +1,2 @@
+{"timestamp": "2026-08-21T14:15:53.224774+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 34}
+{"timestamp": "2026-08-21T14:15:53.263775+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 37}

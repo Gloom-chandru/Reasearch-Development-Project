@@ -23,6 +23,9 @@ from app.api.classrooms import router as classrooms_router
 from app.api.sessions import router as sessions_router
 from app.api.notices import router as notices_router
 from app.api.experiments import router as experiments_router
+from app.api.enrollment import router as enrollment_router
+from app.api.realtime import router as realtime_router
+from app.api.reports import router as reports_router
 
 
 @asynccontextmanager
@@ -59,6 +62,9 @@ app.include_router(classrooms_router)
 app.include_router(sessions_router)
 app.include_router(notices_router)
 app.include_router(experiments_router)
+app.include_router(enrollment_router)
+app.include_router(realtime_router)
+app.include_router(reports_router)
 
 
 # ── Global error handler ─────────────────────────────────────────────
