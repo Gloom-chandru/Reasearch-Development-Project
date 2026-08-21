@@ -7,7 +7,7 @@ from typing import Optional
 
 from sqlalchemy import (
     String, DateTime, Integer, Float, Boolean, ForeignKey,
-    UniqueConstraint,
+    UniqueConstraint, Enum as SAEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
