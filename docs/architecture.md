@@ -1,4 +1,4 @@
-# Smart Classroom Architecture
+   # Smart Classroom Architecture
 
 ## Overview
 
