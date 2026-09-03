@@ -70,7 +70,8 @@ export default function AnalyticsPage() {
   }
 
   const ablationConfigs = ['Recognition only', '+ Quality gate', '+ Entry zone', '+ Liveness']
-  const baselineSystems = ['Manual', 'Fingerprint', 'Proposed']return (
+  const baselineSystems = ['Manual', 'Fingerprint', 'Proposed']
+  return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">Research Analytics</h2>
 

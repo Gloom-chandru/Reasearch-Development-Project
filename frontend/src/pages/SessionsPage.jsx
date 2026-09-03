@@ -1,4 +1,47 @@
-const viewAttendance = async (sessionId) => {
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+
+const API = '/api'
+
+export default function SessionsPage() {
+  const [sessions, setSessions] = useState([])
+  const [classrooms, setClassrooms] = useState([])
+  const [subjects, setSubjects] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [selectedSession, setSelectedSession] = useState(null)
+  const [attendance, setAttendance] = useState(null)
+  const [form, setForm] = useState({
+    classroom_id: '', subject_id: '', title: '',
+    scheduled_start: '', scheduled_end: '',
+    late_start_offset: 5, late_end_offset: 15,
+  })
+
+  useEffect(() => {
+    Promise.all([
+      axios.get(`${API}/sessions?limit=100`),
+      axios.get(`${API}/classrooms`),
+      axios.get(`${API}/sessions/subjects`),
+    ]).then(([sRes, cRes, subRes]) => {
+      setSessions(sRes.data.sessions || [])
+      setClassrooms(cRes.data.classrooms || [])
+      setSubjects(subRes.data.subjects || [])
+    }).finally(() => setLoading(false))
+  }, [])
+
+  const handleCreate = async (e) => {
+    e.preventDefault()
+    await axios.post(`${API}/sessions`, {
+      ...form,
+      classroom_id: parseInt(form.classroom_id),
+      subject_id: parseInt(form.subject_id),
+    })
+    setShowForm(false)
+    const res = await axios.get(`${API}/sessions?limit=100`)
+    setSessions(res.data.sessions || [])
+  }
+
+  const viewAttendance = async (sessionId) => {
     const res = await axios.get(`${API}/sessions/${sessionId}/attendance`)
     setAttendance(res.data)
     setSelectedSession(sessions.find(s => s.id === sessionId))
@@ -58,48 +101,8 @@ const viewAttendance = async (sessionId) => {
           </button>
         </form>
       )}
-import React, { useState, useEffect } from 'react'
-import axios from 'axios'
 
-const API = '/api'
-
-export default function SessionsPage() {
-  const [sessions, setSessions] = useState([])
-  const [classrooms, setClassrooms] = useState([])
-  const [subjects, setSubjects] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [selectedSession, setSelectedSession] = useState(null)
-  const [attendance, setAttendance] = useState(null)
-  const [form, setForm] = useState({
-    classroom_id: '', subject_id: '', title: '',
-    scheduled_start: '', scheduled_end: '',
-    late_start_offset: 5, late_end_offset: 15,
-  })
-
-  useEffect(() => {
-    Promise.all([
-      axios.get(`${API}/sessions?limit=100`),
-      axios.get(`${API}/classrooms`),
-      axios.get(`${API}/sessions/subjects`),
-    ]).then(([sRes, cRes, subRes]) => {
-      setSessions(sRes.data.sessions || [])
-      setClassrooms(cRes.data.classrooms || [])
-      setSubjects(subRes.data.subjects || [])
-    }).finally(() => setLoading(false))
-  }, [])
-
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    await axios.post(`${API}/sessions`, {
-      ...form,
-      classroom_id: parseInt(form.classroom_id),
-      subject_id: parseInt(form.subject_id),
-    })
-    setShowForm(false)
-    const res = await axios.get(`${API}/sessions?limit=100`)
-    setSessions(res.data.sessions || [])
-  }<div className="grid gap-4">
+      <div className="grid gap-4">
         {sessions.map(session => (
           <div key={session.id} className="bg-white rounded-xl border p-4 flex items-center justify-between">
             <div>

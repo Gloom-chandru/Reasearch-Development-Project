@@ -57,7 +57,7 @@ class ExperimentRunner:
             sample_size=n,
             condition=condition,
         )
-def run_recognition_experiment(
+    def run_recognition_experiment(
         self, test_frames: List[Tuple[np.ndarray, int]]
     ) -> int:
         """Experiment 1: Recognition accuracy on test set."""

@@ -35,6 +35,26 @@ async def lifespan(app: FastAPI):
     # Create tables (use alembic in production)
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified/created.")
+
+    # Seed default super_admin user if DB has no users
+    from app.database import SessionLocal
+    from app.repositories.repository_core import UserRepository
+    from app.utils.security import hash_password
+    db = SessionLocal()
+    try:
+        user_repo = UserRepository(db)
+        if not user_repo.list():
+            user_repo.create(
+                username="admin",
+                email="admin@classroom.local",
+                hashed_password=hash_password("admin123"),
+                full_name="System Administrator",
+                role="super_admin",
+            )
+            logger.info("Created default super_admin user (admin / admin123).")
+    finally:
+        db.close()
+
     yield
     logger.info("Shutting down Smart Classroom backend...")
 

@@ -2,3 +2,8 @@
 {"timestamp": "2026-08-21T14:15:53.263775+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 37}
 {"timestamp": "2026-09-01T04:59:16.066240+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 34}
 {"timestamp": "2026-09-01T04:59:16.096832+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 37}
+{"timestamp": "2026-09-03T04:20:25.595851+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 34}
+{"timestamp": "2026-09-03T04:20:25.600802+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 37}
+{"timestamp": "2026-09-03T04:20:54.352868+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 34}
+{"timestamp": "2026-09-03T04:20:54.367805+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 37}
+{"timestamp": "2026-09-03T04:20:54.635956+00:00", "level": "INFO", "logger": "classroom", "message": "Created default super_admin user (admin / admin123).", "module": "main", "function": "lifespan", "line": 54}
