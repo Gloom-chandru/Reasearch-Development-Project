@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from typing import Optional
 
 from app.database import get_db
 from app.utils.dependencies import get_current_user, require_role
 from app.schemas.session import SessionCreate, SessionResponse, SessionListResponse, SessionUpdate
 from app.services.session_service import SessionService
-from app.schemas.attendance import AttendanceListResponse, AttendanceCorrectionRequest
+from app.schemas.attendance import AttendanceListResponse, AttendanceCorrectionRequest, AttendanceRecordResponse
 from app.services.attendance_service import AttendanceService
 from app.models.user import User
 from app.repositories.repository_sessions import SubjectRepository
@@ -51,7 +52,7 @@ def create_session(
     current_user: User = Depends(require_role("super_admin", "hod", "coordinator", "faculty")),
 ):
     service = SessionService(db)
-    return service.create_session(data)
+    return service.create_session(data, user_id=current_user.id)
 
 
 @router.get("", response_model=SessionListResponse)
@@ -100,7 +101,7 @@ def activate_session(
     current_user: User = Depends(require_role("super_admin", "hod", "coordinator", "faculty")),
 ):
     service = SessionService(db)
-    return service.activate_session(session_id)
+    return service.activate_session(session_id, user_id=current_user.id)
 
 
 @router.post("/{session_id}/complete", response_model=SessionResponse)
@@ -110,7 +111,7 @@ def complete_session(
     current_user: User = Depends(require_role("super_admin", "hod", "coordinator", "faculty")),
 ):
     service = SessionService(db)
-    return service.complete_session(session_id)
+    return service.complete_session(session_id, user_id=current_user.id)
 
 
 @router.get("/{session_id}/attendance", response_model=AttendanceListResponse)
@@ -123,7 +124,7 @@ def get_session_attendance(
     return service.get_session_records(session_id)
 
 
-@router.post("/attendance/correct")
+@router.post("/attendance/correct", response_model=AttendanceRecordResponse)
 def correct_attendance(
     correction: AttendanceCorrectionRequest,
     db: Session = Depends(get_db),
@@ -131,3 +132,38 @@ def correct_attendance(
 ):
     service = AttendanceService(db)
     return service.correct_attendance(correction, current_user.id)
+
+
+class AttendanceRecordCreate(BaseModel):
+    """Payload for recording an attendance event from the recognition pipeline."""
+    student_id: int
+    session_id: int
+    recognition_decision: str = "match"
+    similarity_score: Optional[float] = None
+    quality_label: Optional[str] = None
+    entry_zone_result: Optional[str] = None
+    liveness_result: Optional[str] = None
+
+
+@router.post("/attendance/record", response_model=AttendanceRecordResponse)
+def record_attendance(
+    payload: AttendanceRecordCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("super_admin", "hod", "coordinator", "faculty")),
+):
+    """Record a single attendance event.
+
+    Used by the recognition pipeline (or by manual entry) to insert an
+    AttendanceRecord. DB unique constraint prevents duplicates per
+    (student, session).
+    """
+    service = AttendanceService(db)
+    return service.record_attendance(
+        student_id=payload.student_id,
+        session_id=payload.session_id,
+        recognition_decision=payload.recognition_decision,
+        similarity_score=payload.similarity_score,
+        quality_label=payload.quality_label,
+        entry_zone_result=payload.entry_zone_result,
+        liveness_result=payload.liveness_result,
+    )

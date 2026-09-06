@@ -20,10 +20,7 @@ def test_record_attendance_present(client, auth_headers, sample_session, sample_
         json=payload,
         headers=auth_headers,
     )
-    # Endpoint may not exist (we use direct service); fall back to direct
-    if response.status_code == 404:
-        pytest.skip("REST record endpoint not exposed; service-level test only")
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     body = response.json()
     assert body["status"] in ("present", "late")
     assert body["student_id"] == sample_student.id
@@ -32,7 +29,7 @@ def test_record_attendance_present(client, auth_headers, sample_session, sample_
 def test_record_attendance_inactive_session(client, auth_headers, sample_student, sample_classroom, sample_subject):
     """Recording attendance on a scheduled (not yet active) session should fail."""
     from app.repositories.repository_sessions import AttendanceSessionRepository
-    from app.database import TestingSessionLocal
+    from tests.conftest import TestingSessionLocal
     db = TestingSessionLocal()
     try:
         now = datetime.utcnow()
@@ -58,9 +55,7 @@ def test_record_attendance_inactive_session(client, auth_headers, sample_student
         json=payload,
         headers=auth_headers,
     )
-    if response.status_code == 404:
-        pytest.skip("REST record endpoint not exposed")
-    assert response.status_code == 400
+    assert response.status_code == 400, response.text
 
 
 def test_get_session_attendance_empty(client, auth_headers, sample_session):
@@ -80,19 +75,19 @@ def test_get_session_attendance_empty(client, auth_headers, sample_session):
 
 def test_get_session_attendance_with_records(client, auth_headers, sample_session, sample_student):
     """When records exist, they're returned with student info."""
-    from app.services.attendance_service import AttendanceService
-    from app.database import TestingSessionLocal
-    db = TestingSessionLocal()
-    try:
-        service = AttendanceService(db)
-        service.record_attendance(
-            student_id=sample_student.id,
-            session_id=sample_session.id,
-            recognition_decision="match",
-            similarity_score=0.91,
-        )
-    finally:
-        db.close()
+    # First create a record via the API (so it goes through the same session)
+    payload = {
+        "student_id": sample_student.id,
+        "session_id": sample_session.id,
+        "recognition_decision": "match",
+        "similarity_score": 0.91,
+    }
+    create = client.post(
+        "/api/sessions/attendance/record",
+        json=payload,
+        headers=auth_headers,
+    )
+    assert create.status_code == 200
 
     response = client.get(
         f"/api/sessions/{sample_session.id}/attendance",
@@ -109,20 +104,18 @@ def test_get_session_attendance_with_records(client, auth_headers, sample_sessio
 
 def test_correct_attendance_record(client, auth_headers, sample_session, sample_student):
     """Correction flow updates the record and creates an audit entry."""
-    from app.services.attendance_service import AttendanceService
-    from app.database import TestingSessionLocal
-    from app.schemas.attendance import AttendanceCorrectionRequest
-    db = TestingSessionLocal()
-    try:
-        service = AttendanceService(db)
-        record = service.record_attendance(
-            student_id=sample_student.id,
-            session_id=sample_session.id,
-            recognition_decision="match",
-        )
-        record_id = record.id
-    finally:
-        db.close()
+    payload = {
+        "student_id": sample_student.id,
+        "session_id": sample_session.id,
+        "recognition_decision": "match",
+    }
+    create = client.post(
+        "/api/sessions/attendance/record",
+        json=payload,
+        headers=auth_headers,
+    )
+    assert create.status_code == 200
+    record_id = create.json()["id"]
 
     payload = {
         "record_id": record_id,
@@ -134,7 +127,7 @@ def test_correct_attendance_record(client, auth_headers, sample_session, sample_
         json=payload,
         headers=auth_headers,
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     body = response.json()
     assert body["is_corrected"] is True
     assert body["status"] == "manual"

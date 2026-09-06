@@ -38,6 +38,9 @@ class Student(Base):
     attendance_records: Mapped[List["AttendanceRecord"]] = relationship(
         "AttendanceRecord", back_populates="student"
     )
+    classroom_enrollments: Mapped[List["ClassroomEnrollment"]] = relationship(
+        "ClassroomEnrollment", back_populates="student", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Student {self.id}: {self.register_number} - {self.full_name}>"

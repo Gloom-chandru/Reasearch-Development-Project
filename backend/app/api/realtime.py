@@ -59,6 +59,7 @@ async def recognize_frame(
     image_data: str = Form(...),
     session_id: Optional[int] = Form(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("super_admin", "hod", "coordinator", "faculty")),
 ):
     """Receive a camera frame and run it through the recognition pipeline.
 

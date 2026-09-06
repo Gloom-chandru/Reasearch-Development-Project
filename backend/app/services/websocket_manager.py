@@ -97,14 +97,26 @@ class ConnectionManager:
         })
 
     async def broadcast_session_state(
-        self, classroom_id: int, session: dict
+        self,
+        classroom_id: int,
+        session_id: int = None,
+        status: str = None,
+        title: str = None,
+        **kwargs,
     ) -> int:
-        """Broadcast session state (start, end, etc.)."""
-        return await self.broadcast(classroom_id, {
+        """Broadcast session lifecycle state (active, completed, etc.)."""
+        payload = {
             "type": "session_state",
-            "session": session,
             "timestamp": str(datetime.datetime.utcnow()),
-        })
+        }
+        if session_id is not None:
+            payload["session_id"] = session_id
+        if status is not None:
+            payload["status"] = status
+        if title is not None:
+            payload["title"] = title
+        payload.update(kwargs)
+        return await self.broadcast(classroom_id, payload)
 
 
 # Global singleton

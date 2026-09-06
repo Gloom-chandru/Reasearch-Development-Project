@@ -21,6 +21,13 @@ pydantic-settings>=2.2.0
 opencv-python>=4.9.0
 numpy>=1.26.0
 
+# Face recognition — primary recognition backend
+# Install with: pip install insightface onnxruntime
+# CPU-only: pip install insightface onnxruntime
+# GPU: pip install insightface onnxruntime-gpu
+insightface>=0.7.3
+onnxruntime>=1.17.0
+
 # WebSocket
 websockets>=12.0
 

@@ -15,6 +15,7 @@ from app.repositories.repository_sessions import (
     CorrectionRepository,
 )
 from app.repositories.repository_core import StudentRepository
+from app.repositories.repository_logging import AuditLogRepository, SystemEventRepository
 from app.schemas.attendance import AttendanceCorrectionRequest
 from app.utils.logging import logger
 
@@ -26,6 +27,8 @@ class AttendanceService:
         self.session_repo = AttendanceSessionRepository(db)
         self.student_repo = StudentRepository(db)
         self.correction_repo = CorrectionRepository(db)
+        self.audit_repo = AuditLogRepository(db)
+        self.system_event_repo = SystemEventRepository(db)
     def record_attendance(
         self,
         student_id: int,
@@ -117,6 +120,20 @@ class AttendanceService:
             new_decision=old_decision,
             reason=correction.reason,
         )
+        # Audit log
+        try:
+            self.audit_repo.create(
+                user_id=user_id,
+                action="correct_attendance",
+                entity_type="attendance_record",
+                entity_id=correction.record_id,
+                details=(
+                    f"Status: {old_status} → {correction.new_status}. "
+                    f"Reason: {correction.reason}"
+                ),
+            )
+        except Exception as e:
+            logger.warning(f"Audit log write failed: {e}")
         logger.info(
             f"Attendance corrected: record={correction.record_id} "
             f"{old_status}->{correction.new_status} by user={user_id}"
@@ -147,6 +164,7 @@ class AttendanceService:
                 "is_corrected": r.is_corrected,
                 "corrected_by": r.corrected_by,
                 "captured_at": r.captured_at,
+                "created_at": r.created_at,
                 "student_register_number": student.register_number if student else None,
                 "student_name": student.full_name if student else None,
             })

@@ -28,8 +28,14 @@ def create_access_token(
     data: dict,
     expires_delta: Optional[datetime.timedelta] = None,
 ) -> str:
-    """Create a signed JWT access token."""
+    """Create a signed JWT access token.
+
+    python-jose requires ``sub`` to be a string; coerce it here so callers
+    can pass an int user id without worrying about the JWT spec.
+    """
     to_encode = data.copy()
+    if "sub" in to_encode and not isinstance(to_encode["sub"], str):
+        to_encode["sub"] = str(to_encode["sub"])
     expire = datetime.datetime.utcnow() + (
         expires_delta
         or datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)

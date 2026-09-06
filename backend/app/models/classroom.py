@@ -28,6 +28,9 @@ class Classroom(Base):
     sessions: Mapped[List["AttendanceSession"]] = relationship(
         "AttendanceSession", back_populates="classroom"
     )
+    enrollments: Mapped[List["ClassroomEnrollment"]] = relationship(
+        "ClassroomEnrollment", back_populates="classroom"
+    )
 
     def __repr__(self) -> str:
         return f"<Classroom {self.code}: {self.name}>"

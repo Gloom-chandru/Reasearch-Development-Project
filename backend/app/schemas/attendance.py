@@ -29,6 +29,31 @@ class AttendanceRecordResponse(BaseModel):
     class Config:
         from_attributes = True
 
+    @classmethod
+    def from_orm_with_student(cls, record, student=None) -> "AttendanceRecordResponse":
+        """Build the response from a SQLAlchemy record + optional student."""
+        # Normalize enum values
+        def _val(v):
+            return v.value if hasattr(v, "value") else v
+
+        return cls(
+            id=record.id,
+            student_id=record.student_id,
+            session_id=record.session_id,
+            status=_val(record.status),
+            recognition_decision=_val(record.recognition_decision),
+            similarity_score=record.similarity_score,
+            quality_label=record.quality_label,
+            entry_zone_result=record.entry_zone_result,
+            liveness_result=record.liveness_result,
+            is_corrected=record.is_corrected,
+            corrected_by=record.corrected_by,
+            captured_at=record.captured_at,
+            created_at=record.created_at,
+            student_register_number=student.register_number if student else None,
+            student_name=student.full_name if student else None,
+        )
+
 
 class AttendanceListResponse(BaseModel):
     total: int

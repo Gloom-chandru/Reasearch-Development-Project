@@ -14,6 +14,7 @@ from app.models.config import AttendanceConfiguration
 from app.models.audit import AuditLog
 from app.models.system_event import SystemEvent
 from app.models.experiment import Experiment, ExperimentResult
+from app.models.enrollment import ClassroomEnrollment
 
 __all__ = [
     "Base",
@@ -31,4 +32,5 @@ __all__ = [
     "SystemEvent",
     "Experiment",
     "ExperimentResult",
+    "ClassroomEnrollment",
 ]
