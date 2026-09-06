@@ -60,12 +60,16 @@ class ExcelReportService:
 
         df = pd.DataFrame(data_rows)
 
+        def _sv(v):
+            """Safe enum-or-string value extractor."""
+            return v.value if hasattr(v, "value") else str(v)
+
         # Summary statistics
         total = len(records)
-        present = sum(1 for r in records if r.status == "present" or r.status.value == "present")
-        late = sum(1 for r in records if r.status == "late" or r.status.value == "late")
-        absent = sum(1 for r in records if r.status == "absent-unmarked" or r.status.value == "absent-unmarked")
-        manual = sum(1 for r in records if r.status == "manual" or r.status.value == "manual")
+        present = sum(1 for r in records if _sv(r.status) == "present")
+        late    = sum(1 for r in records if _sv(r.status) == "late")
+        absent  = sum(1 for r in records if _sv(r.status) == "absent-unmarked")
+        manual  = sum(1 for r in records if _sv(r.status) == "manual")
 
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:

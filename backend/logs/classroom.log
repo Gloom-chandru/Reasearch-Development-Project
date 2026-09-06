@@ -2251,3 +2251,14 @@
 {"timestamp": "2026-09-03T06:56:57.957038+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 37}
 {"timestamp": "2026-09-03T06:56:58.177966+00:00", "level": "INFO", "logger": "classroom", "message": "Created default super_admin user (admin / admin123).", "module": "main", "function": "lifespan", "line": 54}
 {"timestamp": "2026-09-03T06:56:58.638419+00:00", "level": "INFO", "logger": "classroom", "message": "Shutting down Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 59}
+{"timestamp": "2026-09-06T07:40:15.260061+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 75}
+{"timestamp": "2026-09-06T07:40:15.946142+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 78}
+{"timestamp": "2026-09-06T07:40:16.493415+00:00", "level": "INFO", "logger": "classroom", "message": "Shutting down Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 100}
+{"timestamp": "2026-09-06T07:40:52.508716+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 75}
+{"timestamp": "2026-09-06T07:40:52.671414+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 78}
+{"timestamp": "2026-09-06T07:41:12.648747+00:00", "level": "INFO", "logger": "classroom", "message": "Shutting down Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 100}
+{"timestamp": "2026-09-06T07:41:37.329907+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 75}
+{"timestamp": "2026-09-06T07:41:37.458042+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 78}
+{"timestamp": "2026-09-06T07:42:50.439166+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 75}
+{"timestamp": "2026-09-06T07:42:50.481586+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 78}
+{"timestamp": "2026-09-06T07:49:32.480055+00:00", "level": "INFO", "logger": "classroom", "message": "User login: admin (super_admin)", "module": "auth_service", "function": "login", "line": 75}

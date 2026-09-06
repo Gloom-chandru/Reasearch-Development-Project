@@ -12,6 +12,8 @@ import NoticesPage from './pages/NoticesPage'
 import UsersPage from './pages/UsersPage'
 import ClassroomDisplay from './pages/ClassroomDisplay'
 import AnalyticsPage from './pages/AnalyticsPage'
+import LiveRecognitionPage from './pages/LiveRecognitionPage'
+import AuditLogPage from './pages/AuditLogPage'
 import Layout from './components/Layout'
 
 export default function App() {
@@ -34,6 +36,8 @@ export default function App() {
             <Route path="/notices" element={<NoticesPage />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/live" element={<LiveRecognitionPage />} />
+            <Route path="/audit" element={<AuditLogPage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

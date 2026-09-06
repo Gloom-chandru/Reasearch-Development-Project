@@ -328,6 +328,17 @@ class CameraPipeline:
                                         decision="match",
                                     )
                                 )
+                                # Trigger LED (simulated or physical)
+                                try:
+                                    from app.services.led_service import trigger_attendance_led
+                                    trigger_attendance_led(
+                                        status=status_val,
+                                        student_name=student.full_name,
+                                        classroom_id=classroom_id,
+                                        db=self.db,
+                                    )
+                                except Exception:
+                                    pass
                 except Exception as e:
                     logger.warning(f"Attendance recording failed: {e}")
 

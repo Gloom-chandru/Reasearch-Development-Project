@@ -28,6 +28,8 @@ from app.api.experiments import router as experiments_router
 from app.api.enrollment import router as enrollment_router
 from app.api.realtime import router as realtime_router
 from app.api.reports import router as reports_router
+from app.api.dashboard import router as dashboard_router
+from app.api.audit import router as audit_router
 
 
 # ── Secret key safety check ────────────────────────────────────────
@@ -153,6 +155,8 @@ app.include_router(experiments_router)
 app.include_router(enrollment_router)
 app.include_router(realtime_router)
 app.include_router(reports_router)
+app.include_router(dashboard_router)
+app.include_router(audit_router)
 
 
 # ── Global error handler ───────────────────────────────────────────

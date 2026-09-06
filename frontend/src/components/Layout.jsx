@@ -7,10 +7,12 @@ const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: '📊', roles: null },
   { to: '/students', label: 'Students', icon: '👥', roles: null },
   { to: '/sessions', label: 'Sessions', icon: '📅', roles: null },
+  { to: '/live', label: 'Live', icon: '📷', roles: null },
   { to: '/classrooms', label: 'Classrooms', icon: '🏫', roles: null },
   { to: '/notices', label: 'Notices', icon: '📢', roles: null },
   { to: '/users', label: 'Users', icon: '🔑', roles: ['super_admin', 'hod'] },
   { to: '/analytics', label: 'Analytics', icon: '📈', roles: null },
+  { to: '/audit', label: 'Audit', icon: '🔍', roles: ['super_admin', 'hod', 'coordinator'] },
 ]
 
 export default function Layout() {

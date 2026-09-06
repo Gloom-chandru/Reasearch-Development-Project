@@ -1,43 +1,51 @@
-# Backend dependencies for Smart Classroom
+# Smart Classroom Backend — pinned dependencies
+# Generated for Python 3.11+
+# Install: pip install -r requirements.txt
+# For face recognition GPU support: pip install onnxruntime-gpu  (instead of onnxruntime)
 
-# Web framework
+# ── Web framework ──────────────────────────────────────────────────
 fastapi>=0.110.0
 uvicorn[standard]>=0.29.0
 
-# Database
+# ── Database ───────────────────────────────────────────────────────
 sqlalchemy>=2.0.30
-psycopg2-binary>=2.9.9  # PostgreSQL driver (optional, SQLite works for dev)
+psycopg2-binary>=2.9.9     # PostgreSQL driver (remove if SQLite-only)
+alembic>=1.13.0            # Database migrations (use for production schema changes)
 
-# Auth
+# ── Auth ───────────────────────────────────────────────────────────
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1              # Explicit pin — passlib works with bcrypt 4.x
 python-multipart>=0.0.9
 
-# Schemas / validation
+# ── Schemas / validation ───────────────────────────────────────────
 pydantic>=2.7.0
 pydantic-settings>=2.2.0
 
-# CV / AI (install separately on systems with camera)
+# ── CV / AI — primary pipeline ─────────────────────────────────────
 opencv-python>=4.9.0
 numpy>=1.26.0
-
-# Face recognition — primary recognition backend
-# Install with: pip install insightface onnxruntime
-# CPU-only: pip install insightface onnxruntime
-# GPU: pip install insightface onnxruntime-gpu
+# Primary recognition backend (required):
 insightface>=0.7.3
-onnxruntime>=1.17.0
+onnxruntime>=1.17.0        # CPU inference; swap for onnxruntime-gpu for GPU
 
-# WebSocket
+# ── CV / AI — optional fallback detector ──────────────────────────
+# face_recognition is a dlib-based fallback used when InsightFace is unavailable.
+# It requires dlib which needs a C++ compiler. Install separately if needed:
+#   pip install face_recognition
+# The system gracefully falls back to OpenCV Haar cascade if absent.
+
+# ── WebSocket ──────────────────────────────────────────────────────
 websockets>=12.0
 
-# Reporting
+# ── Reporting ─────────────────────────────────────────────────────
 pandas>=2.2.0
 openpyxl>=3.1.0
 
-# Testing
+# ── Testing ───────────────────────────────────────────────────────
 pytest>=8.0.0
 httpx>=0.27.0
+pytest-asyncio>=0.23.0
 
-# Utilities
+# ── Utilities ─────────────────────────────────────────────────────
 python-dotenv>=1.0.0

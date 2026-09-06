@@ -9,6 +9,8 @@ from pydantic import BaseModel, Field
 
 
 class ExperimentCreate(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
     name: str = Field(..., max_length=120)
     description: Optional[str] = None
     experiment_type: str = Field(..., max_length=40)
@@ -21,6 +23,8 @@ class ExperimentCreate(BaseModel):
 
 
 class ExperimentResponse(BaseModel):
+    model_config = {"from_attributes": True, "protected_namespaces": ()}
+
     id: int
     name: str
     description: Optional[str]
@@ -32,9 +36,6 @@ class ExperimentResponse(BaseModel):
     participant_count: Optional[int]
     notes: Optional[str]
     created_at: datetime.datetime
-
-    class Config:
-        from_attributes = True
 
 
 class ExperimentResultCreate(BaseModel):
@@ -48,6 +49,8 @@ class ExperimentResultCreate(BaseModel):
 
 
 class ExperimentResultResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
     id: int
     experiment_id: int
     metric_name: str
@@ -57,6 +60,3 @@ class ExperimentResultResponse(BaseModel):
     sample_size: int
     condition: Optional[str]
     created_at: datetime.datetime
-
-    class Config:
-        from_attributes = True

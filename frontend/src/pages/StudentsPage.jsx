@@ -40,6 +40,14 @@ export default function StudentsPage() {
     }
   }
 
+  const downloadStudentReport = (studentId) => {
+    const token = localStorage.getItem('token')
+    const a = document.createElement('a')
+    a.href = `${API}/reports/student/${studentId}?token=${token}`
+    a.download = `student_${studentId}_attendance.xlsx`
+    a.click()
+  }
+
   const filtered = filter
     ? students.filter(s =>
         s.full_name.toLowerCase().includes(filter.toLowerCase()) ||
@@ -124,10 +132,16 @@ export default function StudentsPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
+                  <div className="flex gap-2">
                   <button onClick={() => setEnrollTarget(s)}
                     className="px-3 py-1.5 text-xs bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100">
                     📷 Enroll Face
                   </button>
+                  <button onClick={() => downloadStudentReport(s.id)}
+                    className="px-3 py-1.5 text-xs bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100">
+                    ⬇ Report
+                  </button>
+                  </div>
                 </td>
               </tr>
             ))}
