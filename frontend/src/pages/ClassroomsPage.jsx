@@ -35,7 +35,9 @@ export default function ClassroomsPage() {
     try {
       const res = await axios.get(`${API}/classrooms`)
       setClassrooms(res.data.classrooms || [])
-    } catch { /* ignore */ }
+    } catch (err) {
+      setError('Failed to load classrooms — is the backend running?')
+    }
     finally { setLoading(false) }
   }
 
@@ -76,14 +78,18 @@ export default function ClassroomsPage() {
 
   const openEnrollPanel = async (room) => {
     setEnrollPanel(room)
-    const [sRes, subRes, enrRes] = await Promise.all([
-      axios.get(`${API}/students?limit=500`),
-      axios.get(`${API}/sessions/subjects`),
-      axios.get(`${API}/classrooms/${room.id}/enrollments`),
-    ])
-    setStudents(sRes.data.students || [])
-    setSubjects(subRes.data.subjects || [])
-    setEnrollments(enrRes.data.enrollments || [])
+    try {
+      const [sRes, subRes, enrRes] = await Promise.all([
+        axios.get(`${API}/students?limit=500`),
+        axios.get(`${API}/sessions/subjects`),
+        axios.get(`${API}/classrooms/${room.id}/enrollments`),
+      ])
+      setStudents(sRes.data.students || [])
+      setSubjects(subRes.data.subjects || [])
+      setEnrollments(enrRes.data.enrollments || [])
+    } catch (err) {
+      setError('Failed to load enrollment data: ' + (err.response?.data?.detail || err.message))
+    }
   }
 
   const handleEnroll = async (e) => {

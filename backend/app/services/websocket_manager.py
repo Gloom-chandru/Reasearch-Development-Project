@@ -21,9 +21,14 @@ class ConnectionManager:
         self._connections: Dict[int, Set[WebSocket]] = {}
         self._active_sessions: Dict[int, int] = {}  # classroom_id -> session_id
 
-    async def connect(self, websocket: WebSocket, classroom_id: int) -> None:
-        """Accept a WebSocket connection and register it for a classroom."""
-        await websocket.accept()
+    async def connect(self, websocket: WebSocket, classroom_id: int, skip_accept: bool = False) -> None:
+        """Accept a WebSocket connection and register it for a classroom.
+
+        Args:
+            skip_accept: If True, skip websocket.accept() (already called before auth).
+        """
+        if not skip_accept:
+            await websocket.accept()
         if classroom_id not in self._connections:
             self._connections[classroom_id] = set()
         self._connections[classroom_id].add(websocket)

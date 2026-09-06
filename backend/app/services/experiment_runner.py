@@ -347,7 +347,7 @@ class ExperimentRunner:
         self,
         live_frames_seq: List[List[np.ndarray]],
         attack_frames_seq: List[List[np.ndarray]],
-        landmarks_extractor=None,
+        landmarks_extractor=None,  # kept for API compatibility; ignored — MediaPipe used internally
     ) -> int:
         """Experiment 7 — Liveness detection (blink-based, experimental).
 
@@ -377,28 +377,12 @@ class ExperimentRunner:
         )
 
         def _run_seq(seq: List[np.ndarray], detector: LivenessDetector) -> str:
+            """Run a sequence of BGR frames through the detector and return final verdict."""
             detector.reset()
             last_result = {"liveness": "uncertain"}
             for frame in seq:
-                lms = None
-                if landmarks_extractor:
-                    try:
-                        lms = landmarks_extractor(frame)
-                    except Exception:
-                        pass
-                if lms is None:
-                    # Try to get landmarks from InsightFace if available
-                    try:
-                        from app.services.recognition_service import _model
-                        if _model:
-                            faces = _model.get(frame)
-                            if faces:
-                                kps = faces[0].kps
-                                if kps is not None:
-                                    lms = np.array(kps)
-                    except Exception:
-                        pass
-                last_result = detector.process_frame(lms)
+                # process_frame_bgr handles MediaPipe landmark extraction internally
+                last_result = detector.process_frame_bgr(frame)
             return last_result.get("liveness", "uncertain")
 
         # Live sequences — expect "live"

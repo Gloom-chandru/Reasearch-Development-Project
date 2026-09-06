@@ -35,6 +35,10 @@ onnxruntime>=1.17.0        # CPU inference; swap for onnxruntime-gpu for GPU
 #   pip install face_recognition
 # The system gracefully falls back to OpenCV Haar cascade if absent.
 
+# Liveness detection — MediaPipe Face Mesh (468 landmarks, required for EAR blink detection)
+# The liveness check returns "uncertain" if this is not installed.
+mediapipe>=0.10.0
+
 # ── WebSocket ──────────────────────────────────────────────────────
 websockets>=12.0
 

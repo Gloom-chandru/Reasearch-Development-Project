@@ -231,9 +231,9 @@ class CameraPipeline:
                 result.entry_zone = {"inside": True, "reason": "Entry zone disabled"}
 
             # ── Liveness check (experimental) ─────────────────────────────────
-            if self._cfg.liveness_enabled and landmarks is not None:
-                landmarks_np = np.array(landmarks)
-                liveness_result = self.liveness.process_frame(landmarks_np)
+            if self._cfg.liveness_enabled:
+                # Pass the raw BGR frame — LivenessDetector calls MediaPipe internally
+                liveness_result = self.liveness.process_frame_bgr(frame)
                 result.liveness = liveness_result
                 timestamps["liveness"] = time.perf_counter()
                 # Reject confirmed spoof; allow "uncertain" through (still observing)
@@ -247,7 +247,8 @@ class CameraPipeline:
             else:
                 result.liveness = {
                     "liveness": "not_checked",
-                    "reason": "Liveness disabled or no landmarks",
+                    "reason": "Liveness disabled in classroom config",
+                    "landmark_source": "none",
                 }
                 timestamps["liveness"] = time.perf_counter()
 
