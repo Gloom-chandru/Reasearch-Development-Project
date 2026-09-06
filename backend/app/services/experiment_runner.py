@@ -217,11 +217,16 @@ class ExperimentRunner:
                 pred_id = result["student_id"]
                 decision = result["decision"]
                 if true_id is None:
-                    fp += 1 if decision == "match" else tn + 1
+                    # Impostor frame — correct rejection or false alarm
+                    if decision == "match":
+                        fp += 1
+                    else:
+                        tn += 1
                 else:
+                    # Genuine frame — correct match, wrong match, or miss
                     if decision == "match" and pred_id == true_id:
                         tp += 1
-                    elif decision == "match":
+                    elif decision == "match" and pred_id != true_id:
                         fp += 1
                     else:
                         fn += 1
