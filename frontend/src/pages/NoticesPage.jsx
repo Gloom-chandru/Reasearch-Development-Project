@@ -32,14 +32,17 @@ export default function NoticesPage() {
     try {
       const res = await axios.get(`${API}/notices`)
       setNotices(res.data.notices || [])
-    } catch { /* ignore */ }
+    } catch (err) {
+      setError('Failed to load notices: ' + (err.response?.data?.detail || err.message))
+    }
   }
 
   const fetchClassrooms = async () => {
     try {
       const res = await axios.get(`${API}/classrooms`)
       setClassrooms(res.data.classrooms || [])
-    } catch { /* ignore */ }
+    } catch { /* non-critical — classroom list is optional for notices */ }
+  }
   }
 
   const handleSubmit = async (e) => {

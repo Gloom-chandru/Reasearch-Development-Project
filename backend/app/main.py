@@ -50,19 +50,16 @@ if settings.SECRET_KEY == _INSECURE_DEFAULT:
 # the IP is temporarily blocked.  This is a simple in-memory solution —
 # suitable for single-process deployments.  For multi-process / production
 # use a Redis-backed limiter (e.g. slowapi).
-_RATE_LIMIT_WINDOW = 60        # seconds
-_RATE_LIMIT_MAX_ATTEMPTS = 10  # failed attempts before blocking
+# Configurable via RATE_LIMIT_WINDOW_SECONDS and RATE_LIMIT_MAX_FAILURES in .env
 _rate_buckets: DefaultDict[str, List[float]] = defaultdict(list)
 
 
 def _is_rate_limited(ip: str) -> bool:
     """Return True if `ip` has exceeded the auth failure rate limit."""
     now = time.monotonic()
-    window = _RATE_LIMIT_WINDOW
-    attempts = _rate_buckets[ip]
-    # Drop stale entries
-    _rate_buckets[ip] = [t for t in attempts if now - t < window]
-    return len(_rate_buckets[ip]) >= _RATE_LIMIT_MAX_ATTEMPTS
+    window = settings.RATE_LIMIT_WINDOW_SECONDS
+    _rate_buckets[ip] = [t for t in _rate_buckets[ip] if now - t < window]
+    return len(_rate_buckets[ip]) >= settings.RATE_LIMIT_MAX_FAILURES
 
 
 def _record_auth_failure(ip: str) -> None:
@@ -130,7 +127,7 @@ async def auth_rate_limit_middleware(request: Request, call_next):
                 content={
                     "detail": (
                         f"Too many failed login attempts. "
-                        f"Please wait {_RATE_LIMIT_WINDOW}s before trying again."
+                        f"Please wait {settings.RATE_LIMIT_WINDOW_SECONDS}s before trying again."
                     )
                 },
             )

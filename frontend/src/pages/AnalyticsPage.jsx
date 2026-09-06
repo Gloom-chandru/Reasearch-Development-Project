@@ -78,10 +78,12 @@ export default function AnalyticsPage() {
   const [experiments, setExperiments] = useState([])
   const [results, setResults] = useState({})
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState('')
 
   useEffect(() => { fetchAll() }, [])
 
   const fetchAll = async () => {
+    setFetchError('')
     try {
       const res = await axios.get(`${API}/experiments`)
       const exps = res.data || []
@@ -94,7 +96,9 @@ export default function AnalyticsPage() {
         } catch { map[exp.id] = [] }
       }))
       setResults(map)
-    } catch { /* ignore */ }
+    } catch (err) {
+      setFetchError('Failed to load experiments: ' + (err.response?.data?.detail || err.message))
+    }
     finally { setLoading(false) }
   }
 
@@ -157,6 +161,13 @@ export default function AnalyticsPage() {
           ↻ Refresh
         </button>
       </div>
+
+      {fetchError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm flex justify-between items-center">
+          <span>{fetchError}</span>
+          <button onClick={() => setFetchError('')} className="ml-4 underline text-xs">dismiss</button>
+        </div>
+      )}
 
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
         <p className="font-medium">Anti-fabrication contract</p>

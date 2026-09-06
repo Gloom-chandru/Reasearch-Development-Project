@@ -15,6 +15,8 @@ export default function ClassroomDisplay() {
   const [modeIndex, setModeIndex] = useState(0)
   const [recentRecords, setRecentRecords] = useState([])
   const [wsConnected, setWsConnected] = useState(false)
+  const [ledState, setLedState] = useState(null)   // { state, student_name, simulated }
+  const ledTimerRef = useRef(null)
   const wsRef = useRef(null)
 
   const mode = MODE_CYCLE[modeIndex % MODE_CYCLE.length]
@@ -33,8 +35,13 @@ export default function ClassroomDisplay() {
           setRecentRecords(prev => [data, ...prev.slice(0, 9)])
         }
         if (data.type === 'session_state') {
-          // Reload session when state changes
           fetchSession()
+        }
+        if (data.type === 'led_event') {
+          // Show LED flash, auto-clear after 2.5 seconds
+          setLedState(data)
+          clearTimeout(ledTimerRef.current)
+          ledTimerRef.current = setTimeout(() => setLedState(null), 2500)
         }
       },
     })
@@ -63,7 +70,10 @@ export default function ClassroomDisplay() {
     fetchNotices()
     // Refresh notices every minute (auto-expiry handled server-side)
     const noticeInterval = setInterval(fetchNotices, 60000)
-    return () => clearInterval(noticeInterval)
+    return () => {
+      clearInterval(noticeInterval)
+      clearTimeout(ledTimerRef.current)
+    }
   }, [fetchSession, fetchNotices])
 
   // Mode cycling
@@ -91,6 +101,44 @@ export default function ClassroomDisplay() {
             <p className="text-xs text-gray-500 mt-1">
               {new Date().toLocaleDateString()} — Classroom {classroomId}
             </p>
+          </div>
+        </div>
+
+        {/* ── LED Simulation Widget ──────────────────────────────────────────
+            Reacts to led_event WebSocket messages from the backend LED service.
+            IMPORTANT: This is a SOFTWARE SIMULATION — no physical LED is
+            connected. The label is always visible to prevent any confusion
+            during demos or thesis presentations. See §11 and led_service.py.
+        ─────────────────────────────────────────────────────────────────── */}
+        <div className="mb-6">
+          <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-300 ${
+            ledState?.state === 'present' ? 'bg-green-900/60 border-green-500 shadow-lg shadow-green-900/50' :
+            ledState?.state === 'late'    ? 'bg-yellow-900/60 border-yellow-500 shadow-lg shadow-yellow-900/50' :
+            ledState?.state === 'unknown' ? 'bg-red-900/60 border-red-500 shadow-lg shadow-red-900/50' :
+            'bg-gray-800/40 border-gray-600'
+          }`}>
+            {/* LED dot */}
+            <div className={`w-5 h-5 rounded-full flex-shrink-0 transition-all duration-300 ${
+              ledState?.state === 'present' ? 'bg-green-400 shadow-md shadow-green-400 animate-pulse' :
+              ledState?.state === 'late'    ? 'bg-yellow-400 shadow-md shadow-yellow-400 animate-pulse' :
+              ledState?.state === 'unknown' ? 'bg-red-400 shadow-md shadow-red-400 animate-pulse' :
+              'bg-gray-600'
+            }`} />
+            <div className="flex-1 min-w-0">
+              {ledState ? (
+                <p className="text-sm font-medium truncate">
+                  {ledState.state === 'present' && <span className="text-green-300">✓ Present — {ledState.student_name}</span>}
+                  {ledState.state === 'late'    && <span className="text-yellow-300">⚠ Late — {ledState.student_name}</span>}
+                  {ledState.state === 'unknown' && <span className="text-red-300">? Unknown face</span>}
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500">LED indicator — idle</p>
+              )}
+            </div>
+            {/* Permanent simulation disclaimer — always visible */}
+            <span className="text-xs text-gray-500 border border-gray-600 px-2 py-0.5 rounded flex-shrink-0">
+              ⚠ SOFTWARE SIMULATION
+            </span>
           </div>
         </div>
 

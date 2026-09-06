@@ -45,13 +45,16 @@ export default function LiveRecognitionPage() {
   const [statusMsg, setStatusMsg] = useState('')
 
   useEffect(() => {
-    axios.get(`${API}/classrooms`).then(r => setClassrooms(r.data.classrooms || []))
+    axios.get(`${API}/classrooms`)
+      .then(r => setClassrooms(r.data.classrooms || []))
+      .catch(() => setStatusMsg('Failed to load classrooms — is the backend running?'))
   }, [])
 
   useEffect(() => {
     if (!selectedClassroom) { setSessions([]); return }
     axios.get(`${API}/sessions?classroom_id=${selectedClassroom}&limit=20`)
       .then(r => setSessions((r.data.sessions || []).filter(s => s.status === 'active' || s.status === 'scheduled')))
+      .catch(() => setStatusMsg('Failed to load sessions for this classroom'))
   }, [selectedClassroom])
 
   const startCamera = async () => {

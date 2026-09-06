@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     # WebSocket
     WS_HEARTBEAT_INTERVAL: int = 30
 
+    # Auth rate limiting (in-process, resets on restart)
+    RATE_LIMIT_WINDOW_SECONDS: int = 60      # sliding window duration
+    RATE_LIMIT_MAX_FAILURES: int = 10        # failures before blocking
+
     # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/classroom.log"
