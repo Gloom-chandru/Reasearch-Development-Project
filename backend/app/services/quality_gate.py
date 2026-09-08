@@ -19,7 +19,7 @@ class QualityResult:
         face_box: Optional[Tuple[int, int, int, int]] = None,
         landmarks: Optional[list] = None,
     ):
-        self.label = label  # GOOD / ACCEPTABLE / REJECT
+        self.label = label      # GOOD / ACCEPTABLE / REJECT
         self.reason = reason
         self.face_box = face_box
         self.landmarks = landmarks
@@ -34,16 +34,24 @@ class QualityResult:
 class QualityGate:
     """Applies quality checks to detected faces.
 
-    Checks:
-    1. Face size >= MIN_FACE_SIZE
-    2. Blur (Laplacian variance >= BLUR_THRESHOLD)
+    Checks (in order):
+    1. Face size >= min_size
+    2. Blur (Laplacian variance >= blur_threshold)
     3. Pose extremity (via face aspect ratio)
-    4. Enrollment-only: larger face, near-frontal pose
+
+    Thresholds (relaxed from original so real webcam captures pass):
+    - MIN_FACE_SIZE default 80px — enrollment requires 90px (not 120px)
+    - Blur threshold default 80 — stays the same
+    - Aspect ratio 0.35–2.0 (was 0.4–1.8) to handle slight tilts
     """
 
+    # Relaxed enrollment threshold — was 1.5× (120px), now 1.1× (88px)
+    # This allows users sitting ~0.5m from webcam to pass without leaning in
+    ENROLLMENT_SIZE_FACTOR = 1.1
+
     def __init__(self):
-        self.min_size = settings.MIN_FACE_SIZE
-        self.blur_threshold = settings.BLUR_THRESHOLD
+        self.min_size       = settings.MIN_FACE_SIZE       # 80px default
+        self.blur_threshold = settings.BLUR_THRESHOLD      # 80.0 default
 
     def check_face(
         self,
@@ -55,53 +63,59 @@ class QualityGate:
         x, y, w, h = face_box
         reasons = []
 
-        # 1. Size check
-        if w < self.min_size or h < self.min_size:
-            reasons.append(f"Face too small ({w}x{h}px, min {self.min_size})")
+        # ── 1. Size check ──────────────────────────────────────────────────
+        if is_enrollment:
+            min_size = int(self.min_size * self.ENROLLMENT_SIZE_FACTOR)  # ~88px
+        else:
+            min_size = self.min_size
 
-        # 2. Blur check (Laplacian variance)
+        if w < min_size or h < min_size:
+            reasons.append(
+                f"Move closer — face too small ({w}×{h}px, need ≥{min_size}px)"
+            )
+
+        # ── 2. Blur check (Laplacian variance) ────────────────────────────
         try:
-            face_roi = frame[y : y + h, x : x + w]
+            face_roi = frame[y: y + h, x: x + w]
             if face_roi.size == 0:
                 reasons.append("Empty face region")
             else:
-                gray_roi = cv2.cvtColor(face_roi, cv2.COLOR_BGR2GRAY)
+                gray_roi      = cv2.cvtColor(face_roi, cv2.COLOR_BGR2GRAY)
                 laplacian_var = cv2.Laplacian(gray_roi, cv2.CV_64F).var()
                 if laplacian_var < self.blur_threshold:
                     reasons.append(
-                        f"Blurry face (var={laplacian_var:.1f}, "
-                        f"min={self.blur_threshold})"
+                        f"Face is blurry (score={laplacian_var:.0f}, need ≥{self.blur_threshold:.0f}) "
+                        f"— hold still or improve lighting"
                     )
         except Exception as e:
             reasons.append(f"Blur check error: {e}")
 
-        # 3. Pose via bounding-box aspect ratio
-        aspect_ratio = w / max(h, 1)
-        if aspect_ratio < 0.4 or aspect_ratio > 1.8:
-            reasons.append(f"Extreme pose (aspect={aspect_ratio:.2f})")
+        # ── 3. Pose (aspect ratio) ─────────────────────────────────────────
+        aspect = w / max(h, 1)
+        if aspect < 0.35 or aspect > 2.0:
+            reasons.append(
+                f"Extreme pose (ratio={aspect:.2f}) — face the camera directly"
+            )
 
-        # 4. Enrollment-only stricter checks
-        if is_enrollment:
-            if w < self.min_size * 1.5:
-                reasons.append(
-                    f"Enrollment requires larger face "
-                    f"({w}px, min {self.min_size * 1.5})"
-                )
-            if aspect_ratio < 0.6 or aspect_ratio > 1.5:
-                reasons.append("Enrollment requires near-frontal pose")
-
+        # ── Verdict ────────────────────────────────────────────────────────
         if not reasons:
             return QualityResult(
-                label="GOOD", reason="All checks passed",
-                face_box=face_box, landmarks=landmarks,
+                label="GOOD",
+                reason="All checks passed",
+                face_box=face_box,
+                landmarks=landmarks,
             )
-        elif len(reasons) <= 1:
+        elif len(reasons) == 1:
             return QualityResult(
-                label="ACCEPTABLE", reason="; ".join(reasons),
-                face_box=face_box, landmarks=landmarks,
+                label="ACCEPTABLE",
+                reason=reasons[0],
+                face_box=face_box,
+                landmarks=landmarks,
             )
         else:
             return QualityResult(
-                label="REJECT", reason="; ".join(reasons),
-                face_box=face_box, landmarks=landmarks,
+                label="REJECT",
+                reason="; ".join(reasons),
+                face_box=face_box,
+                landmarks=landmarks,
             )
