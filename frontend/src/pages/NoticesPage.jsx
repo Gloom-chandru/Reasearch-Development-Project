@@ -43,7 +43,6 @@ export default function NoticesPage() {
       setClassrooms(res.data.classrooms || [])
     } catch { /* non-critical — classroom list is optional for notices */ }
   }
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()

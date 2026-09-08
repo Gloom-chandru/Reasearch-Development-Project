@@ -110,6 +110,63 @@ def capture_enrollment_frame(
     }
 
 
+@router.post("/quality-check")
+def quality_check_frame(
+    image_data: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Check face quality in a frame WITHOUT saving anything.
+
+    Used by the enrollment modal to give live green/yellow/red feedback
+    before auto-capturing. Runs face detection + quality gate only.
+
+    Returns:
+        {
+            "face_found": bool,
+            "face_count": int,
+            "quality_label": "GOOD" | "ACCEPTABLE" | "REJECT" | null,
+            "quality_reason": str,
+            "face_box": [x, y, w, h] | null,
+            "confidence": float | null,
+        }
+    """
+    try:
+        image_bytes = base64.b64decode(image_data)
+        np_arr = np.frombuffer(image_bytes, np.uint8)
+        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        if frame is None:
+            return {"face_found": False, "face_count": 0, "quality_label": None,
+                    "quality_reason": "Could not decode image", "face_box": None, "confidence": None}
+    except Exception as e:
+        return {"face_found": False, "face_count": 0, "quality_label": None,
+                "quality_reason": f"Invalid image: {e}", "face_box": None, "confidence": None}
+
+    faces = detect_faces(frame)
+    if len(faces) == 0:
+        return {"face_found": False, "face_count": 0, "quality_label": None,
+                "quality_reason": "No face detected — look at the camera",
+                "face_box": None, "confidence": None}
+    if len(faces) > 1:
+        return {"face_found": False, "face_count": len(faces), "quality_label": "REJECT",
+                "quality_reason": f"Multiple faces ({len(faces)}) — only one person in frame",
+                "face_box": None, "confidence": None}
+
+    face = faces[0]
+    gate = QualityGate()
+    quality = gate.check_face(frame, face["box"], face.get("landmarks"), is_enrollment=True)
+
+    x, y, w, h = face["box"]
+    return {
+        "face_found": True,
+        "face_count": 1,
+        "quality_label": quality.label,
+        "quality_reason": quality.reason,
+        "face_box": [x, y, w, h],
+        "confidence": round(float(face.get("confidence", 0)), 3),
+    }
+
+
 @router.get("/status/{student_id}")
 def get_enrollment_status(
     student_id: int,
