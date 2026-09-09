@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class StudentCreate(BaseModel):
@@ -25,6 +25,8 @@ class StudentUpdate(BaseModel):
 
 
 class StudentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     register_number: str
     full_name: str
@@ -35,9 +37,6 @@ class StudentResponse(BaseModel):
     enrollment_count: int
     created_at: datetime.datetime
     updated_at: datetime.datetime
-
-    class Config:
-        from_attributes = True
 
 
 class StudentListResponse(BaseModel):

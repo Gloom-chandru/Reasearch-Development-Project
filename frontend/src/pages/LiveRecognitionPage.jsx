@@ -61,10 +61,13 @@ export default function LiveRecognitionPage() {
     setCameraError('')
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: 'environment' }
+        video: { width: { ideal: 640 }, height: { ideal: 480 } }
       })
       streamRef.current = stream
-      if (videoRef.current) videoRef.current.srcObject = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        videoRef.current.play().catch(() => {})
+      }
     } catch (err) {
       setCameraError(`Camera error: ${err.message}`)
     }
@@ -102,6 +105,7 @@ export default function LiveRecognitionPage() {
       setFrameCount(n => n + 1)
 
       const results = res.data?.results || []
+      drawOverlay(results)
       if (results.length > 0) {
         setRecentResults(prev => {
           const newEntries = results.map(r => ({
@@ -121,9 +125,51 @@ export default function LiveRecognitionPage() {
       }
       setStatusMsg(`Frame ${frameCount + 1} — ${results.length} face(s) — ${elapsed}ms round-trip`)
     } catch (err) {
-      setStatusMsg(`Frame error: ${err.response?.data?.detail || err.message}`)
+      const detail = err.response?.data?.detail
+      const msg = Array.isArray(detail) ? (detail[0]?.msg || 'Validation error') : (typeof detail === 'string' ? detail : (err.message || 'Error'))
+      setStatusMsg(`Frame error: ${msg}`)
     }
   }, [selectedClassroom, selectedSession, frameCount])
+
+  const drawOverlay = (results) => {
+    const canvas = canvasRef.current
+    const video = videoRef.current
+    if (!canvas || !video) return
+    const dw = video.offsetWidth || 640
+    const dh = video.offsetHeight || 480
+    if (canvas.width !== dw || canvas.height !== dh) {
+      canvas.width = dw
+      canvas.height = dh
+    }
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, dw, dh)
+
+    if (!results || results.length === 0) return
+
+    results.forEach(r => {
+      const box = r.quality?.face_box || r.recognition?.face_box
+      if (!box) return
+      const [x, y, w, h] = box
+      const scaleX = dw / (video.videoWidth || dw)
+      const scaleY = dh / (video.videoHeight || dh)
+      const bx = x * scaleX, by = y * scaleY, bw = w * scaleX, bh = h * scaleY
+
+      const isMatch = r.identity?.decision === 'match'
+      const isLow = r.identity?.decision === 'low_confidence'
+      const color = r.rejected ? '#ef4444' : isMatch ? '#22c55e' : isLow ? '#eab308' : '#3b82f6'
+
+      ctx.strokeStyle = color
+      ctx.lineWidth = 3
+      ctx.strokeRect(bx, by, bw, bh)
+
+      const label = r.rejected ? `❌ ${r.reject_reason || 'Rejected'}` : isMatch ? `✓ Student #${r.identity?.student_id}` : isLow ? `⚠ Low confidence` : '? Unknown'
+      ctx.fillStyle = color
+      ctx.fillRect(bx, Math.max(0, by - 22), ctx.measureText(label).width + 12, 20)
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 11px system-ui'
+      ctx.fillText(label, bx + 6, Math.max(14, by - 8))
+    })
+  }
 
   const handleStart = async () => {
     if (!selectedClassroom || !selectedSession) {
@@ -225,7 +271,7 @@ export default function LiveRecognitionPage() {
         {/* Camera feed */}
         <div className="bg-black rounded-xl overflow-hidden aspect-video relative">
           <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
-          <canvas ref={canvasRef} className="hidden" />
+          <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 10 }} />
           {!running && (
             <div className="absolute inset-0 flex items-center justify-center text-white/40 text-sm">
               Camera feed appears here when running

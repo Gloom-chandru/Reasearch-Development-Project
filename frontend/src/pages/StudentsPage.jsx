@@ -243,8 +243,10 @@ function EnrollmentModal({ student, onClose }) {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
       })
-      if (!mounted.current) { stream.getTracks().forEach(t=>t.stop()); return }
-      if (videoRef.current) videoRef.current.srcObject = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        videoRef.current.play().catch(() => {})
+      }
     } catch (err) {
       if (mounted.current)
         setUi(prev => ({ ...prev, cameraError: `Camera unavailable: ${err.message}` }))
@@ -283,7 +285,7 @@ function EnrollmentModal({ student, onClose }) {
             const box   = det.detection.box
             const score = det.detection.score
             const isGoodSize = box.width >= MIN_FACE_PX && box.height >= MIN_FACE_PX
-            const isGoodScore = score >= 0.7
+            const isGoodScore = score >= 0.55   // lowered from 0.7 — TinyFaceDetector scores vary
 
             if (isGoodSize && isGoodScore) {
               if (!greenSince.current) greenSince.current = Date.now()
@@ -292,6 +294,7 @@ function EnrollmentModal({ student, onClose }) {
               const notDone  = captureCount.current < MAX_SAMPLES
 
               if (held >= GREEN_HOLD_MS && coolOk && !isSaving.current && notDone) {
+                console.log('[Enrollment] AUTO-CAPTURE triggered — held:', held, 'ms, count:', captureCount.current)
                 doCaptureRef.current && doCaptureRef.current()
               }
             } else {
@@ -318,7 +321,7 @@ function EnrollmentModal({ student, onClose }) {
     const box   = det.detection.box
     const score = det.detection.score
     const small = box.width < MIN_FACE_PX || box.height < MIN_FACE_PX
-    const lowConf = score < 0.7
+    const lowConf = score < 0.55
 
     if (small) {
       setStatus('yellow', '🟡  Move closer to the camera')
@@ -386,7 +389,7 @@ function EnrollmentModal({ student, onClose }) {
     const bh = box.height * scaleY
 
     const small    = box.width < MIN_FACE_PX || box.height < MIN_FACE_PX
-    const lowConf  = score < 0.7
+    const lowConf  = score < 0.55
     const isGood   = !small && !lowConf
 
     const colour   = isGood ? '#22c55e' : small || lowConf ? '#eab308' : '#ef4444'
@@ -496,7 +499,9 @@ function EnrollmentModal({ student, onClose }) {
         setUi(prev => ({ ...prev, saving: false }))
       }
     } catch (err) {
-      setStatus('red', `❌ ${err.response?.data?.detail || 'Server error'}`)
+      const detail = err.response?.data?.detail
+      const msg = Array.isArray(detail) ? (detail[0]?.msg || 'Validation error') : (typeof detail === 'string' ? detail : (err.message || 'Server error'))
+      setStatus('red', `❌ ${msg}`)
       setUi(prev => ({ ...prev, saving: false }))
     }
 
@@ -508,6 +513,9 @@ function EnrollmentModal({ student, onClose }) {
       }
     }, 1200)
   }
+
+  // Wire doCapture into ref so the detection loop can call it
+  doCaptureRef.current = doCapture
 
   const manualCapture = () => { if (!isSaving.current) doCapture() }
 

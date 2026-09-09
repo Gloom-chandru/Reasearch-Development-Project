@@ -5,10 +5,12 @@ from __future__ import annotations
 import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AttendanceRecordResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     student_id: int
     session_id: int
@@ -25,9 +27,6 @@ class AttendanceRecordResponse(BaseModel):
     # Nested student info via relationship
     student_register_number: Optional[str] = None
     student_name: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
     @classmethod
     def from_orm_with_student(cls, record, student=None) -> "AttendanceRecordResponse":

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ClassroomCreate(BaseModel):
@@ -19,6 +19,8 @@ class ClassroomCreate(BaseModel):
 
 
 class ClassroomResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     code: str
@@ -29,9 +31,6 @@ class ClassroomResponse(BaseModel):
     entry_zone_x2: float
     entry_zone_y2: float
     is_active: bool
-
-    class Config:
-        from_attributes = True
 
 
 class ClassroomListResponse(BaseModel):

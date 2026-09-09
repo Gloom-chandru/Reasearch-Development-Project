@@ -74,7 +74,7 @@ def _load_model() -> bool:
             return True
         try:
             from insightface.app import FaceAnalysis
-            app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
+            app = FaceAnalysis(name="buffalo_l", providers=["CUDAExecutionProvider", "CoreMLExecutionProvider", "CPUExecutionProvider"])
             app.prepare(ctx_id=0, det_size=(640, 640))
             _model = app
             _model_name = "insightface_buffalo_l"
@@ -138,7 +138,44 @@ def wilson_ci(successes: int, trials: int, z: float = 1.96) -> Tuple[float, floa
     margin = z * ((p * (1 - p) + z ** 2 / (4 * trials)) / trials) ** 0.5
     lower = (centre - margin) / denom
     upper = (centre + margin) / denom
-    return (max(0.0, lower), min(1.0, upper))
+    return (max(0.0, float(lower)), min(1.0, float(upper)))
+
+
+def _faiss_search(query_emb: np.ndarray, cache_snapshot: dict) -> Dict[int, float]:
+    """Perform FAISS index search if faiss is installed, falling back to vector dot product."""
+    try:
+        import faiss
+        embeddings = []
+        student_ids = []
+        for emb_id, (student_id, stored_emb) in cache_snapshot.items():
+            if stored_emb.shape == query_emb.shape:
+                embeddings.append(stored_emb)
+                student_ids.append(student_id)
+        if not embeddings:
+            return {}
+        data_matrix = np.vstack(embeddings).astype(np.float32)
+        dim = data_matrix.shape[1]
+        index = faiss.IndexFlatIP(dim)
+        index.add(data_matrix)
+        k = min(len(embeddings), 50)
+        query_mat = np.expand_dims(query_emb, axis=0).astype(np.float32)
+        similarities, indices = index.search(query_mat, k)
+        student_best = {}
+        for idx, sim in zip(indices[0], similarities[0]):
+            if idx >= 0:
+                sid = student_ids[idx]
+                sim_val = float(sim)
+                if sid not in student_best or sim_val > student_best[sid]:
+                    student_best[sid] = sim_val
+        return student_best
+    except Exception:
+        student_best = {}
+        for emb_id, (student_id, stored_emb) in cache_snapshot.items():
+            if stored_emb.shape == query_emb.shape:
+                sim = cosine_similarity(query_emb, stored_emb)
+                if student_id not in student_best or sim > student_best[student_id]:
+                    student_best[student_id] = sim
+        return student_best
 
 
 # ── Service class ─────────────────────────────────────────────────────────────
@@ -243,14 +280,7 @@ class RecognitionService:
                 "reject_reason": "No enrolled embeddings in database",
             }
 
-        # Compute cosine similarity against all cached embeddings
-        # Keep best score per student_id
-        student_best: Dict[int, float] = {}
-        for emb_id, (student_id, stored_emb) in cache_snapshot.items():
-            if stored_emb.shape == query_emb.shape:
-                sim = cosine_similarity(query_emb, stored_emb)
-                if student_id not in student_best or sim > student_best[student_id]:
-                    student_best[student_id] = sim
+        student_best = _faiss_search(query_emb, cache_snapshot)
 
         if not student_best:
             return {

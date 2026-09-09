@@ -25,7 +25,7 @@ def _load_detector() -> bool:
     try:
         import insightface
         from insightface.app import FaceAnalysis
-        app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
+        app = FaceAnalysis(name="buffalo_l", providers=["CUDAExecutionProvider", "CoreMLExecutionProvider", "CPUExecutionProvider"])
         app.prepare(ctx_id=0, det_size=(640, 640))
         _detector = app
         _detector_name = "insightface"

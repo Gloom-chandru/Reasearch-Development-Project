@@ -22,15 +22,15 @@ from app.utils.logging import logger
 
 
 def _run_async(coro):
-    """Fire-and-forget an async coroutine from sync context."""
+    """Fire-and-forget an async coroutine from sync context safely."""
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.ensure_future(coro)
-        else:
-            loop.run_until_complete(coro)
-    except Exception:
-        pass
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(coro)
+        except RuntimeError:
+            asyncio.run(coro)
+    except Exception as e:
+        logger.debug(f"_run_async failed: {e}")
 
 
 class SessionService:

@@ -82,9 +82,10 @@ class QualityGate:
             else:
                 gray_roi      = cv2.cvtColor(face_roi, cv2.COLOR_BGR2GRAY)
                 laplacian_var = cv2.Laplacian(gray_roi, cv2.CV_64F).var()
-                if laplacian_var < self.blur_threshold:
+                blur_thresh   = 35.0 if is_enrollment else self.blur_threshold
+                if laplacian_var < blur_thresh:
                     reasons.append(
-                        f"Face is blurry (score={laplacian_var:.0f}, need ≥{self.blur_threshold:.0f}) "
+                        f"Face is blurry (score={laplacian_var:.0f}, need ≥{blur_thresh:.0f}) "
                         f"— hold still or improve lighting"
                     )
         except Exception as e:

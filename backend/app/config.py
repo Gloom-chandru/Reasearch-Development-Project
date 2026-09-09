@@ -5,10 +5,12 @@ from __future__ import annotations
 import os
 from typing import List, Optional
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+
     # CORS
     ORIGINS: List[str] = ["*"]
 
@@ -50,10 +52,6 @@ class Settings(BaseSettings):
     MQTT_BROKER: str = "localhost"
     MQTT_PORT: int = 1883
     MQTT_TOPIC: str = "classroom/led"
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
 
 
 settings = Settings()

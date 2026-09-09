@@ -44,10 +44,11 @@ from app.services.camera_pipeline import CameraPipeline
 from app.services.websocket_manager import manager
 from app.utils.logging import logger
 
-router = APIRouter(prefix="/ws", tags=["websocket"])
+router = APIRouter(tags=["websocket"])
 
 # Maximum seconds a client has to send its auth token after connecting
 WS_AUTH_TIMEOUT_SECONDS = 5
+
 
 
 async def _authenticate_websocket(websocket: WebSocket) -> Optional[User]:
@@ -123,7 +124,7 @@ async def _authenticate_websocket(websocket: WebSocket) -> Optional[User]:
 
 # ── WebSocket endpoint ────────────────────────────────────────────────────────
 
-@router.websocket("/classroom/{classroom_id}")
+@router.websocket("/ws/classroom/{classroom_id}")
 async def classroom_websocket(websocket: WebSocket, classroom_id: int):
     """Authenticated WebSocket for real-time classroom display.
 
@@ -162,7 +163,8 @@ async def classroom_websocket(websocket: WebSocket, classroom_id: int):
 
 # ── REST frame submission endpoint ────────────────────────────────────────────
 
-@router.post("/recognize/{classroom_id}")
+@router.post("/ws/recognize/{classroom_id}")
+@router.post("/api/ws/recognize/{classroom_id}")
 async def recognize_frame(
     classroom_id: int,
     image_data: str = Form(...),

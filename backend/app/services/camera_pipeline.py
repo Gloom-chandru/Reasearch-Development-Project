@@ -44,6 +44,22 @@ from app.utils.logging import logger
 
 # ── Pipeline result ────────────────────────────────────────────────────────────
 
+def _sanitize_val(val):
+    if isinstance(val, dict):
+        return {k: _sanitize_val(v) for k, v in val.items()}
+    elif isinstance(val, (list, tuple)):
+        return [_sanitize_val(x) for x in val]
+    elif isinstance(val, (np.bool_, bool)):
+        return bool(val)
+    elif isinstance(val, (np.integer, int)):
+        return int(val)
+    elif isinstance(val, (np.floating, float)):
+        return float(val)
+    elif isinstance(val, np.ndarray):
+        return val.tolist()
+    return val
+
+
 class PipelineResult:
     """Result of processing one face through the pipeline."""
 
@@ -70,7 +86,7 @@ class PipelineResult:
         self.reject_reason = reject_reason
 
     def to_dict(self) -> dict:
-        return {
+        return _sanitize_val({
             "identity": self.identity,
             "quality": self.quality,
             "entry_zone": self.entry_zone,
@@ -80,7 +96,7 @@ class PipelineResult:
             "latency": self.latency,
             "rejected": self.rejected,
             "reject_reason": self.reject_reason,
-        }
+        })
 
 
 # ── Effective config helper ────────────────────────────────────────────────────
@@ -369,12 +385,12 @@ def _compute_latencies(timestamps: dict) -> dict:
 
 
 def _async_broadcast(coro) -> None:
-    """Fire-and-forget an async coroutine from a sync context."""
+    """Fire-and-forget an async coroutine from a sync context safely."""
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.ensure_future(coro)
-        else:
-            loop.run_until_complete(coro)
-    except Exception:
-        pass
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(coro)
+        except RuntimeError:
+            asyncio.run(coro)
+    except Exception as e:
+        logger.debug(f"_async_broadcast failed: {e}")

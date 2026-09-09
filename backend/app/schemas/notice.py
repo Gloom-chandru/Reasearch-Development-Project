@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class NoticeCreate(BaseModel):
@@ -18,6 +18,8 @@ class NoticeCreate(BaseModel):
 
 
 class NoticeResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     title: str
     body: str
@@ -28,9 +30,6 @@ class NoticeResponse(BaseModel):
     valid_until: Optional[datetime.datetime]
     is_active: bool
     created_at: datetime.datetime
-
-    class Config:
-        from_attributes = True
 
 
 class NoticeListResponse(BaseModel):

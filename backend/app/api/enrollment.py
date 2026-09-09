@@ -28,7 +28,7 @@ router = APIRouter(prefix="/api/enrollment", tags=["enrollment"])
 
 @router.post("/capture")
 def capture_enrollment_frame(
-    student_id: int,
+    student_id: int = Form(...),
     image_data: str = Form(...),  # base64-encoded JPEG
     capture_index: int = Form(0),
     db: Session = Depends(get_db),
