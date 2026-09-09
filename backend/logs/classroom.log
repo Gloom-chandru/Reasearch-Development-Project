@@ -4065,3 +4065,5 @@
 {"timestamp": "2026-09-09T16:56:39.503705+00:00", "level": "INFO", "logger": "classroom", "message": "Shutting down Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 97}
 {"timestamp": "2026-09-09T16:59:57.165484+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 72}
 {"timestamp": "2026-09-09T16:59:57.170005+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 75}
+{"timestamp": "2026-09-09T17:06:23.839677+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 72}
+{"timestamp": "2026-09-09T17:06:23.848400+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 75}
