@@ -4,6 +4,20 @@ import { useAuth } from '../contexts/AuthContext'
 
 const API = '/api'
 
+// ── UTC date parser helper ────────────────────────────────────────────────────
+// The backend returns datetimes WITHOUT a timezone suffix (e.g. "2026-09-10T05:05:55").
+// JavaScript's Date constructor treats timezone-naive strings as LOCAL time on most
+// browsers, but Date.now() returns UTC milliseconds — causing the countdown to show
+// the wrong remaining time (e.g. appears expired immediately in IST timezone).
+// Fix: always append 'Z' to force UTC interpretation.
+const parseUTC = (s) => {
+  if (!s) return null
+  // Already has timezone info
+  if (s.endsWith('Z') || s.includes('+')) return new Date(s)
+  // Naive string — treat as UTC
+  return new Date(s + 'Z')
+}
+
 const PRIORITY = {
   0: { label: 'Normal',    badge: 'bg-blue-500/20 text-blue-300 border border-blue-500/30',    dot: 'bg-blue-400',    tvBadge: 'text-blue-400',    bar: 'bg-blue-500',    border: 'border-blue-500/60' },
   1: { label: 'Important', badge: 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30', dot: 'bg-yellow-400', tvBadge: 'text-yellow-400', bar: 'bg-yellow-500', border: 'border-yellow-500/60' },

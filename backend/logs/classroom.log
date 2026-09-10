@@ -4115,3 +4115,14 @@
 {"timestamp": "2026-09-10T04:57:33.326213+00:00", "level": "INFO", "logger": "classroom", "message": "WebSocket client connected for classroom=1", "module": "websocket_manager", "function": "connect", "line": 35}
 {"timestamp": "2026-09-10T04:58:03.171164+00:00", "level": "INFO", "logger": "classroom", "message": "Created notice: 6 - hi", "module": "notice_service", "function": "create_notice", "line": 28}
 {"timestamp": "2026-09-10T04:59:05.425680+00:00", "level": "INFO", "logger": "classroom", "message": "Created notice: 7 - Important message", "module": "notice_service", "function": "create_notice", "line": 28}
+{"timestamp": "2026-09-10T05:00:24.063548+00:00", "level": "INFO", "logger": "classroom", "message": "WebSocket client disconnected for classroom=1", "module": "websocket_manager", "function": "disconnect", "line": 43}
+{"timestamp": "2026-09-10T05:00:24.165951+00:00", "level": "INFO", "logger": "classroom", "message": "Shutting down Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 97}
+{"timestamp": "2026-09-10T05:00:27.400940+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 72}
+{"timestamp": "2026-09-10T05:00:27.424064+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 75}
+{"timestamp": "2026-09-10T05:00:51.848557+00:00", "level": "INFO", "logger": "classroom", "message": "WS authenticated: user=hod_aids classroom_id from path", "module": "realtime", "function": "_authenticate_websocket", "line": 121}
+{"timestamp": "2026-09-10T05:00:51.848557+00:00", "level": "INFO", "logger": "classroom", "message": "WebSocket client connected for classroom=3", "module": "websocket_manager", "function": "connect", "line": 35}
+{"timestamp": "2026-09-10T05:00:55.051688+00:00", "level": "INFO", "logger": "classroom", "message": "User login: admin (super_admin)", "module": "auth_service", "function": "login", "line": 75}
+{"timestamp": "2026-09-10T05:00:57.086963+00:00", "level": "INFO", "logger": "classroom", "message": "Created notice: 8 - DEBUG 5-minute notice", "module": "notice_service", "function": "create_notice", "line": 28}
+{"timestamp": "2026-09-10T05:01:53.283111+00:00", "level": "INFO", "logger": "classroom", "message": "Shutting down Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 97}
+{"timestamp": "2026-09-10T05:01:56.286942+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 72}
+{"timestamp": "2026-09-10T05:01:56.304331+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 75}
