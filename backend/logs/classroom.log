@@ -4111,3 +4111,7 @@
 {"timestamp": "2026-09-10T04:41:00.235191+00:00", "level": "INFO", "logger": "classroom", "message": "Completed session: 3 (30 absent-unmarked written)", "module": "session_service", "function": "complete_session", "line": 160}
 {"timestamp": "2026-09-10T04:41:03.348402+00:00", "level": "INFO", "logger": "classroom", "message": "Completed session: 4 (30 absent-unmarked written)", "module": "session_service", "function": "complete_session", "line": 160}
 {"timestamp": "2026-09-10T04:51:12.483830+00:00", "level": "INFO", "logger": "classroom", "message": "Created notice: 5 - hi", "module": "notice_service", "function": "create_notice", "line": 28}
+{"timestamp": "2026-09-10T04:57:33.326213+00:00", "level": "INFO", "logger": "classroom", "message": "WS authenticated: user=hod_aids classroom_id from path", "module": "realtime", "function": "_authenticate_websocket", "line": 121}
+{"timestamp": "2026-09-10T04:57:33.326213+00:00", "level": "INFO", "logger": "classroom", "message": "WebSocket client connected for classroom=1", "module": "websocket_manager", "function": "connect", "line": 35}
+{"timestamp": "2026-09-10T04:58:03.171164+00:00", "level": "INFO", "logger": "classroom", "message": "Created notice: 6 - hi", "module": "notice_service", "function": "create_notice", "line": 28}
+{"timestamp": "2026-09-10T04:59:05.425680+00:00", "level": "INFO", "logger": "classroom", "message": "Created notice: 7 - Important message", "module": "notice_service", "function": "create_notice", "line": 28}
