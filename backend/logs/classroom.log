@@ -4134,3 +4134,6 @@
 {"timestamp": "2026-09-10T05:16:38.537697+00:00", "level": "INFO", "logger": "classroom", "message": "Created notice: 8 - DEBUG 5-minute notice", "module": "notice_service", "function": "create_notice", "line": 28}
 {"timestamp": "2026-09-10T05:17:43.932840+00:00", "level": "INFO", "logger": "classroom", "message": "User login: hod_aids (hod)", "module": "auth_service", "function": "login", "line": 75}
 {"timestamp": "2026-09-10T05:18:38.808828+00:00", "level": "INFO", "logger": "classroom", "message": "User login: dr_rajan_aids (faculty)", "module": "auth_service", "function": "login", "line": 75}
+{"timestamp": "2026-09-10T05:33:50.787740+00:00", "level": "INFO", "logger": "classroom", "message": "Shutting down Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 97}
+{"timestamp": "2026-09-10T05:33:52.966891+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 72}
+{"timestamp": "2026-09-10T05:33:52.982916+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 75}
