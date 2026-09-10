@@ -4126,3 +4126,11 @@
 {"timestamp": "2026-09-10T05:01:53.283111+00:00", "level": "INFO", "logger": "classroom", "message": "Shutting down Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 97}
 {"timestamp": "2026-09-10T05:01:56.286942+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 72}
 {"timestamp": "2026-09-10T05:01:56.304331+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 75}
+{"timestamp": "2026-09-10T05:13:39.881625+00:00", "level": "INFO", "logger": "classroom", "message": "WebSocket client disconnected for classroom=3", "module": "websocket_manager", "function": "disconnect", "line": 43}
+{"timestamp": "2026-09-10T05:16:11.158705+00:00", "level": "INFO", "logger": "classroom", "message": "Shutting down Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 97}
+{"timestamp": "2026-09-10T05:16:13.560522+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 72}
+{"timestamp": "2026-09-10T05:16:13.561516+00:00", "level": "INFO", "logger": "classroom", "message": "Database tables verified/created.", "module": "main", "function": "lifespan", "line": 75}
+{"timestamp": "2026-09-10T05:16:36.510947+00:00", "level": "INFO", "logger": "classroom", "message": "User login: admin (super_admin)", "module": "auth_service", "function": "login", "line": 75}
+{"timestamp": "2026-09-10T05:16:38.537697+00:00", "level": "INFO", "logger": "classroom", "message": "Created notice: 8 - DEBUG 5-minute notice", "module": "notice_service", "function": "create_notice", "line": 28}
+{"timestamp": "2026-09-10T05:17:43.932840+00:00", "level": "INFO", "logger": "classroom", "message": "User login: hod_aids (hod)", "module": "auth_service", "function": "login", "line": 75}
+{"timestamp": "2026-09-10T05:18:38.808828+00:00", "level": "INFO", "logger": "classroom", "message": "User login: dr_rajan_aids (faculty)", "module": "auth_service", "function": "login", "line": 75}

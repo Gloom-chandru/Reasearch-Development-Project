@@ -44,7 +44,7 @@ function ClassroomTV({ classroom, allNotices }) {
   // Get active notices for THIS classroom (classroom-specific + broadcast)
   const myNotices = allNotices.filter(n => {
     if (!n.is_active) return false
-    if (n.valid_until && new Date(n.valid_until) < new Date()) return false
+    if (n.valid_until && parseUTC(n.valid_until) < new Date()) return false
     // Show if targeted at this classroom OR broadcast (no classroom_id)
     return !n.classroom_id || n.classroom_id === classroom.id
   })
@@ -57,8 +57,8 @@ function ClassroomTV({ classroom, allNotices }) {
 
     const tick = () => {
       const now        = Date.now()
-      const end        = new Date(topNotice.valid_until).getTime()
-      const from       = new Date(topNotice.valid_from).getTime()
+      const end        = parseUTC(topNotice.valid_until).getTime()
+      const from       = parseUTC(topNotice.valid_from).getTime()
       const totalMs    = end - from
       const remaining  = Math.max(0, end - now)
       const secs       = Math.ceil(remaining / 1000)
@@ -321,7 +321,7 @@ export default function NoticesPage() {
     catch (err) { setError(err.response?.data?.detail || 'Failed') }
   }
 
-  const isExpired     = (n) => n.valid_until && new Date(n.valid_until) < new Date()
+  const isExpired     = (n) => n.valid_until && parseUTC(n.valid_until) < new Date()
   const activeNotices = notices.filter(n => n.is_active && !isExpired(n))
   const pastNotices   = notices.filter(n => !n.is_active || isExpired(n))
   const selectedCls   = classrooms.find(c => c.id === parseInt(form.classroom_id))
@@ -535,7 +535,7 @@ export default function NoticesPage() {
                       <p className="text-gray-400 text-xs mt-0.5 line-clamp-1">{n.body}</p>
                       {n.valid_until && (
                         <p className="text-gray-600 text-xs mt-1">
-                          Expires {new Date(n.valid_until).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
+                          Expires {parseUTC(n.valid_until).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}
                         </p>
                       )}
                     </div>

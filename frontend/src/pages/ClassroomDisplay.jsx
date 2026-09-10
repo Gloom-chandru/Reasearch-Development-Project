@@ -7,6 +7,15 @@ const API = '/api'
 const MODE_CYCLE       = ['attendance', 'info', 'notice', 'info']
 const MODE_DURATION_MS = 15000
 
+// ── UTC date parser — backend sends naive datetime strings (no Z suffix) ─────
+// Without this, browsers in IST/CST etc. treat the string as local time,
+// making a "5 minute" notice appear to expire immediately.
+const parseUTC = (s) => {
+  if (!s) return null
+  if (s.endsWith('Z') || s.includes('+')) return new Date(s)
+  return new Date(s + 'Z')
+}
+
 // Real countdown bar — uses actual valid_until from the notice
 function NoticeCountdown({ notice }) {
   const [pct, setPct]       = useState(100)
@@ -17,8 +26,8 @@ function NoticeCountdown({ notice }) {
 
     const tick = () => {
       const now      = Date.now()
-      const end      = new Date(notice.valid_until).getTime()
-      const from     = new Date(notice.valid_from).getTime()
+      const end      = parseUTC(notice.valid_until).getTime()
+      const from     = parseUTC(notice.valid_from).getTime()
       const totalMs  = Math.max(end - from, 1)
       const remaining = Math.max(0, end - now)
       setPct((remaining / totalMs) * 100)
@@ -83,7 +92,7 @@ export default function ClassroomDisplay() {
   // Active notices for this classroom
   const activeNotices = notices.filter(n => {
     if (!n.is_active) return false
-    if (n.valid_until && new Date(n.valid_until) < new Date()) return false
+    if (n.valid_until && parseUTC(n.valid_until) < new Date()) return false
     return !n.classroom_id || parseInt(n.classroom_id) === parseInt(classroomId)
   })
 
