@@ -36,7 +36,6 @@ const NAV_ITEMS = [
   { to: '/users', label: 'Users', icon: KeyRound, roles: ['super_admin', 'hod'] },
   { to: '/analytics', label: 'Analytics', icon: BarChart3, roles: null },
   { to: '/audit', label: 'Audit Logs', icon: FileText, roles: ['super_admin', 'hod', 'coordinator'] },
-  { to: '/audit?tab=settings', label: 'Settings', icon: Settings, roles: null },
 ]
 
 export default function Layout() {

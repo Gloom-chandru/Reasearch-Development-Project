@@ -15,6 +15,7 @@ import {
   Video,
   UserPlus,
   Send,
+  School,
   Sliders,
   ShieldCheck,
   AlertTriangle,
@@ -25,6 +26,44 @@ import {
 } from 'lucide-react'
 
 const API = '/api'
+
+// Helper formatters
+const formatSessionTime = (isoString) => {
+  if (!isoString) return ''
+  try {
+    const d = new Date(isoString)
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return isoString
+  }
+}
+
+const formatSessionDate = (isoString) => {
+  if (!isoString) return ''
+  try {
+    const d = new Date(isoString)
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return isoString
+  }
+}
+
+const formatActivityTime = (isoString) => {
+  if (!isoString) return ''
+  try {
+    const d = new Date(isoString)
+    const now = new Date()
+    const diffMs = now - d
+    const diffMins = Math.floor(diffMs / 60000)
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours}h ago`
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  } catch {
+    return isoString
+  }
+}
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -75,26 +114,52 @@ export default function DashboardPage() {
     )
   }
 
-  // Fallback data calculations
-  const totalStudents = stats?.total_students || 246
-  const enrolledStudents = stats?.enrolled_students || 6
-  const unenrolledStudents = totalStudents - enrolledStudents
-  const enrolledPercentage = Math.round((enrolledStudents / totalStudents) * 100)
+  // Real data calculations
+  const totalStudents = stats?.total_students || 0
+  const enrolledStudents = stats?.enrolled_students || 0
+  const unenrolledStudents = stats?.unenrolled_students ?? Math.max(0, totalStudents - enrolledStudents)
+  const enrolledPercentage = totalStudents > 0 ? Math.round((enrolledStudents / totalStudents) * 100) : 0
 
-  const presentToday = 98
-  const absentToday = 148
-  const totalSessionsCount = stats?.total_sessions || 12
+  // Real attendance numbers
+  const hasTodayRecords = (stats?.today_stats?.total || 0) > 0
+  const presentCount = hasTodayRecords
+    ? (stats.today_stats.present + stats.today_stats.late)
+    : ((stats?.attendance_all_time?.present || 0) + (stats?.attendance_all_time?.late || 0))
+  const absentCount = hasTodayRecords
+    ? stats.today_stats.absent
+    : (stats?.attendance_all_time?.absent || 0)
+  const totalAttendanceRecords = presentCount + absentCount
+  const attendanceRate = totalAttendanceRecords > 0 ? Math.round((presentCount / totalAttendanceRecords) * 100) : 0
+  const absentRate = totalAttendanceRecords > 0 ? Math.round((absentCount / totalAttendanceRecords) * 100) : 0
+  const attendanceSubtext = hasTodayRecords
+    ? `${attendanceRate}% today`
+    : (totalAttendanceRecords > 0 ? `${attendanceRate}% overall rate` : 'No records yet')
+  const absentSubtext = hasTodayRecords
+    ? `${absentRate}% today`
+    : (totalAttendanceRecords > 0 ? `${absentRate}% overall rate` : 'No records yet')
 
-  // Dummy attendance bar chart data for Mon-Sun
-  const attendanceChartData = [
-    { day: 'Mon', present: 100, absent: 150 },
-    { day: 'Tue', present: 130, absent: 98 },
-    { day: 'Wed', present: 120, absent: 100 },
-    { day: 'Thu', present: 110, absent: 185 },
-    { day: 'Fri', present: 122, absent: 90 },
-    { day: 'Sat', present: 80, absent: 105 },
-    { day: 'Sun', present: 98, absent: 152 }
-  ]
+  const totalSessionsCount = stats?.total_sessions || 0
+  const activeSessionsCount = stats?.sessions_by_status?.active || 0
+
+  // Dynamic attendance chart data from stats
+  const chartData = (stats?.attendance_chart && stats.attendance_chart.length > 0)
+    ? stats.attendance_chart
+    : [
+        { day: 'Mon', label: 'Mon', present: 0, absent: 0 },
+        { day: 'Tue', label: 'Tue', present: 0, absent: 0 },
+        { day: 'Wed', label: 'Wed', present: 0, absent: 0 },
+        { day: 'Thu', label: 'Thu', present: 0, absent: 0 },
+        { day: 'Fri', label: 'Fri', present: 0, absent: 0 },
+        { day: 'Sat', label: 'Sat', present: 0, absent: 0 },
+        { day: 'Sun', label: 'Sun', present: 0, absent: 0 }
+      ]
+  const maxChartVal = Math.max(1, ...chartData.map(d => Math.max(d.present, d.absent)))
+
+  // Today's / active / scheduled sessions
+  const todayDatePrefix = currentTime.toISOString().slice(0, 10)
+  const todaysSessions = (stats?.recent_sessions || []).filter(s =>
+    s.scheduled_start?.startsWith(todayDatePrefix) || s.status === 'active' || s.status === 'scheduled'
+  )
 
   // Format Date and Time
   const formattedDate = currentTime.toLocaleDateString('en-US', {
@@ -166,7 +231,7 @@ export default function DashboardPage() {
             <p className="text-xs font-semibold text-slate-500">Total Students</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-1">{totalStudents}</p>
             <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 mt-1">
-              <span>↑ +6 this month</span>
+              <span>{enrolledStudents} enrolled for face recognition</span>
             </div>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -174,12 +239,14 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Card 2: Present Today */}
+        {/* Card 2: Present */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Present Today</p>
-            <p className="text-2xl font-extrabold text-slate-900 mt-1">{presentToday}</p>
-            <p className="text-[11px] font-semibold text-slate-400 mt-1">40% attendance</p>
+            <p className="text-xs font-semibold text-slate-500">
+              {hasTodayRecords ? 'Present Today' : 'Present (Total)'}
+            </p>
+            <p className="text-2xl font-extrabold text-slate-900 mt-1">{presentCount}</p>
+            <p className="text-[11px] font-semibold text-slate-400 mt-1">{attendanceSubtext}</p>
           </div>
           <div className="relative w-12 h-12 flex items-center justify-center">
             <svg className="w-12 h-12 transform -rotate-90">
@@ -192,20 +259,22 @@ export default function DashboardPage() {
                 strokeWidth="4"
                 fill="transparent"
                 strokeDasharray="113"
-                strokeDashoffset="67"
+                strokeDashoffset={113 - (113 * attendanceRate) / 100}
                 strokeLinecap="round"
               />
             </svg>
-            <span className="absolute text-[10px] font-bold text-emerald-600">40%</span>
+            <span className="absolute text-[10px] font-bold text-emerald-600">{attendanceRate}%</span>
           </div>
         </div>
 
-        {/* Card 3: Absent Today */}
+        {/* Card 3: Absent */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition-all">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Absent Today</p>
-            <p className="text-2xl font-extrabold text-slate-900 mt-1">{absentToday}</p>
-            <p className="text-[11px] font-semibold text-red-500 mt-1">60% absent</p>
+            <p className="text-xs font-semibold text-slate-500">
+              {hasTodayRecords ? 'Absent Today' : 'Absent (Total)'}
+            </p>
+            <p className="text-2xl font-extrabold text-slate-900 mt-1">{absentCount}</p>
+            <p className="text-[11px] font-semibold text-red-500 mt-1">{absentSubtext}</p>
           </div>
           <div className="relative w-12 h-12 flex items-center justify-center">
             <svg className="w-12 h-12 transform -rotate-90">
@@ -218,11 +287,11 @@ export default function DashboardPage() {
                 strokeWidth="4"
                 fill="transparent"
                 strokeDasharray="113"
-                strokeDashoffset="45"
+                strokeDashoffset={113 - (113 * absentRate) / 100}
                 strokeLinecap="round"
               />
             </svg>
-            <span className="absolute text-[10px] font-bold text-red-500">60%</span>
+            <span className="absolute text-[10px] font-bold text-red-500">{absentRate}%</span>
           </div>
         </div>
 
@@ -231,7 +300,7 @@ export default function DashboardPage() {
           <div>
             <p className="text-xs font-semibold text-slate-500">Total Sessions</p>
             <p className="text-2xl font-extrabold text-slate-900 mt-1">{totalSessionsCount}</p>
-            <p className="text-[11px] font-semibold text-purple-600 mt-1">0 active now</p>
+            <p className="text-[11px] font-semibold text-purple-600 mt-1">{activeSessionsCount} active now</p>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
             <Calendar className="w-6 h-6" />
@@ -267,23 +336,23 @@ export default function DashboardPage() {
 
           {/* Bar Chart Visualization */}
           <div className="h-48 flex items-end justify-between gap-2 pt-4 px-2">
-            {attendanceChartData.map((item) => (
-              <div key={item.day} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+            {chartData.map((item, idx) => (
+              <div key={item.date || idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
                 <div className="w-full flex items-end justify-center gap-1 h-36">
                   {/* Green Present Bar */}
                   <div
-                    className="w-2.5 bg-emerald-400 rounded-t-md transition-all hover:bg-emerald-500"
-                    style={{ height: `${(item.present / 200) * 100}%` }}
+                    className="w-3 bg-emerald-400 rounded-t-md transition-all hover:bg-emerald-500"
+                    style={{ height: `${Math.max(item.present > 0 ? 12 : 4, (item.present / maxChartVal) * 100)}%` }}
                     title={`Present: ${item.present}`}
                   />
                   {/* Red Absent Bar */}
                   <div
-                    className="w-2.5 bg-rose-400 rounded-t-md transition-all hover:bg-rose-500"
-                    style={{ height: `${(item.absent / 200) * 100}%` }}
+                    className="w-3 bg-rose-400 rounded-t-md transition-all hover:bg-rose-500"
+                    style={{ height: `${Math.max(item.absent > 0 ? 12 : 4, (item.absent / maxChartVal) * 100)}%` }}
                     title={`Absent: ${item.absent}`}
                   />
                 </div>
-                <span className="text-[10px] font-bold text-slate-500">{item.day}</span>
+                <span className="text-[10px] font-bold text-slate-500">{item.label || item.day}</span>
               </div>
             ))}
           </div>
@@ -371,76 +440,71 @@ export default function DashboardPage() {
 
             {/* List of Sessions */}
             <div className="space-y-2.5">
-              {[
-                {
-                  title: 'Live Attendance Session',
-                  time: '04:28 PM - 04:58 PM',
-                  badgeP: '1P',
-                  badgeA: '31A',
-                  status: 'Live',
-                  color: 'bg-emerald-500 text-white'
-                },
-                {
-                  title: 'Live Attendance Session',
-                  time: '04:27 PM - 04:57 PM',
-                  badgeP: '1P',
-                  badgeA: '31A',
-                  status: 'Ongoing',
-                  color: 'bg-blue-100 text-blue-700'
-                },
-                {
-                  title: 'Live Attendance Session',
-                  time: '04:24 PM - 04:54 PM',
-                  badgeP: '1P',
-                  badgeA: '31A',
-                  status: 'Upcoming',
-                  color: 'bg-purple-100 text-purple-700'
-                },
-                {
-                  title: 'Python Programming - Lab 1',
-                  time: '09:00 AM - 10:00 AM',
-                  badgeP: '1P',
-                  badgeL: '1L',
-                  badgeA: '30A',
-                  status: 'Completed',
-                  color: 'bg-slate-100 text-emerald-700'
-                },
-                {
-                  title: 'DSA - Lecture 5',
-                  time: '09:00 AM - 10:00 AM',
-                  badgeP: '1P',
-                  badgeL: '1L',
-                  badgeA: '30A',
-                  status: 'Completed',
-                  color: 'bg-slate-100 text-emerald-700'
-                }
-              ].map((sess, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50/80 border border-slate-100 hover:bg-slate-100/80 transition-all text-xs"
-                >
-                  <div className="min-w-0 pr-2">
-                    <p className="font-bold text-slate-800 truncate">{sess.title}</p>
-                    <p className="text-[10px] text-slate-400 font-medium">{sess.time}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 font-bold rounded text-[10px]">
-                      {sess.badgeP}
-                    </span>
-                    {sess.badgeL && (
-                      <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 font-bold rounded text-[10px]">
-                        {sess.badgeL}
+              {todaysSessions.length > 0 ? (
+                todaysSessions.map((sess) => (
+                  <div
+                    key={sess.id}
+                    className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50/80 border border-slate-100 hover:bg-slate-100/80 transition-all text-xs"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <p className="font-bold text-slate-800 truncate" title={sess.title}>
+                        {sess.title}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-medium">
+                        {formatSessionTime(sess.scheduled_start)} - {formatSessionTime(sess.scheduled_end)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 font-bold rounded text-[10px]">
+                        {sess.present}P
                       </span>
-                    )}
-                    <span className="px-1.5 py-0.5 bg-rose-100 text-rose-700 font-bold rounded text-[10px]">
-                      {sess.badgeA}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${sess.color}`}>
-                      {sess.status === 'Live' ? '▶ Live' : sess.status}
-                    </span>
+                      {sess.late > 0 && (
+                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 font-bold rounded text-[10px]">
+                          {sess.late}L
+                        </span>
+                      )}
+                      <span className="px-1.5 py-0.5 bg-rose-100 text-rose-700 font-bold rounded text-[10px]">
+                        {sess.absent}A
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                          sess.status === 'active'
+                            ? 'bg-emerald-500 text-white animate-pulse'
+                            : sess.status === 'scheduled'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {sess.status === 'active' ? '▶ Live' : sess.status.charAt(0).toUpperCase() + sess.status.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-6 flex flex-col items-center justify-center text-center px-4 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+                  <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-700">No sessions scheduled for today</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5 max-w-[200px]">
+                    Launch a live recognition session or schedule a new lecture.
+                  </p>
+                  <div className="flex items-center gap-2 mt-3">
+                    <Link
+                      to="/live"
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
+                    >
+                      Start Live
+                    </Link>
+                    <Link
+                      to="/sessions"
+                      className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 transition-colors"
+                    >
+                      Schedule
+                    </Link>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -473,27 +537,38 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {[
-                    { name: 'Live Attendance Session', date: 'Sep 9, 04:28 PM', p: 1, a: 31 },
-                    { name: 'Live Attendance Session', date: 'Sep 9, 04:27 PM', p: 1, a: 31 },
-                    { name: 'Live Attendance Session', date: 'Sep 9, 04:24 PM', p: 1, a: 31 },
-                    { name: 'Live Attendance Session', date: 'Sep 9, 04:23 PM', p: 0, a: 31 },
-                    { name: 'Python Programming - Lab 1', date: 'Sep 9, 09:00 AM', p: 1, a: 30 }
-                  ].map((row, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
-                      <td className="py-2.5 font-bold text-slate-800 max-w-[140px] truncate">
-                        {row.name}
+                  {(stats?.recent_sessions || []).slice(0, 5).map((row) => (
+                    <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-2.5 font-bold text-slate-800 max-w-[140px] truncate" title={row.title}>
+                        {row.title}
                       </td>
-                      <td className="py-2.5 text-slate-500 font-medium">{row.date}</td>
-                      <td className="py-2.5 text-center font-bold text-emerald-600">{row.p}</td>
-                      <td className="py-2.5 text-center font-bold text-rose-500">{row.a}</td>
+                      <td className="py-2.5 text-slate-500 font-medium whitespace-nowrap">
+                        {formatSessionDate(row.scheduled_start)}
+                      </td>
+                      <td className="py-2.5 text-center font-bold text-emerald-600">{row.present}</td>
+                      <td className="py-2.5 text-center font-bold text-rose-500">{row.absent}</td>
                       <td className="py-2.5 text-right">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
-                          Completed
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                            row.status === 'active'
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                              : row.status === 'scheduled'
+                              ? 'bg-blue-50 text-blue-600 border-blue-200'
+                              : 'bg-slate-50 text-slate-600 border-slate-200'
+                          }`}
+                        >
+                          {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
                         </span>
                       </td>
                     </tr>
                   ))}
+                  {(!stats?.recent_sessions || stats.recent_sessions.length === 0) && (
+                    <tr>
+                      <td colSpan={5} className="py-6 text-center text-slate-400 text-xs">
+                        No recent sessions found
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -514,22 +589,30 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-3.5 text-xs">
-              {[
-                { text: 'Live Attendance Session completed', time: '4:28 PM', color: 'bg-emerald-500' },
-                { text: 'Live Attendance Session completed', time: '4:27 PM', color: 'bg-emerald-500' },
-                { text: 'Live Attendance Session completed', time: '4:24 PM', color: 'bg-emerald-500' },
-                { text: 'New notice added', time: '12:15 PM', color: 'bg-rose-500' },
-                { text: '3 students enrolled for face recognition', time: '11:40 AM', color: 'bg-blue-500' },
-                { text: 'System backup completed', time: '09:30 AM', color: 'bg-emerald-500' }
-              ].map((act, i) => (
-                <div key={i} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${act.color}`} />
-                    <span className="font-semibold text-slate-700 truncate">{act.text}</span>
+              {(stats?.recent_activity || []).map((act) => {
+                let dotColor = 'bg-blue-500'
+                if (act.action === 'complete' || act.action === 'activate') dotColor = 'bg-emerald-500'
+                else if (act.action === 'create') dotColor = 'bg-indigo-500'
+                else if (act.action === 'enroll') dotColor = 'bg-teal-500'
+                else if (act.action === 'correct_attendance') dotColor = 'bg-purple-500'
+
+                return (
+                  <div key={act.id} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+                      <span className="font-semibold text-slate-700 truncate" title={act.details}>
+                        {act.details}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-slate-400 shrink-0">
+                      {formatActivityTime(act.created_at)}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-semibold text-slate-400 shrink-0">{act.time}</span>
-                </div>
-              ))}
+                )
+              })}
+              {(!stats?.recent_activity || stats.recent_activity.length === 0) && (
+                <p className="text-xs text-slate-400 py-4 text-center">No recent activity recorded</p>
+              )}
             </div>
           </div>
         </div>
@@ -576,19 +659,19 @@ export default function DashboardPage() {
               </Link>
 
               <Link
-                to="/users"
+                to="/classrooms"
                 className="p-3.5 rounded-2xl bg-slate-50 hover:bg-blue-50/80 border border-slate-200/80 hover:border-blue-200 flex flex-col items-center text-center group transition-all"
               >
-                <Users className="w-6 h-6 text-blue-600 mb-1.5 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-bold text-slate-800">Manage Users</span>
+                <School className="w-6 h-6 text-blue-600 mb-1.5 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-slate-800">Classrooms</span>
               </Link>
 
               <Link
-                to="/audit?tab=settings"
+                to="/audit"
                 className="p-3.5 rounded-2xl bg-slate-50 hover:bg-blue-50/80 border border-slate-200/80 hover:border-blue-200 flex flex-col items-center text-center group transition-all"
               >
-                <Sliders className="w-6 h-6 text-blue-600 mb-1.5 group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-bold text-slate-800">System Settings</span>
+                <ShieldCheck className="w-6 h-6 text-blue-600 mb-1.5 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-slate-800">Audit Logs</span>
               </Link>
             </div>
           </div>
