@@ -2,6 +2,7 @@ import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { WebSocketProvider } from './contexts/WebSocketContext'
+import { NotificationProvider } from './contexts/NotificationContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
@@ -20,28 +21,30 @@ export default function App() {
   return (
     <AuthProvider>
       <WebSocketProvider>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<LoginPage />} />
-          {/* Classroom display — public kiosk page, no auth required */}
-          <Route path="/display/:classroomId" element={<ClassroomDisplay />} />
+        <NotificationProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<LoginPage />} />
+            {/* Classroom display — public kiosk page, no auth required */}
+            <Route path="/display/:classroomId" element={<ClassroomDisplay />} />
 
-          {/* Protected admin portal */}
-          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/students" element={<StudentsPage />} />
-            <Route path="/sessions" element={<SessionsPage />} />
-            <Route path="/classrooms" element={<ClassroomsPage />} />
-            <Route path="/notices" element={<NoticesPage />} />
-            <Route path="/users" element={<UsersPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/live" element={<LiveRecognitionPage />} />
-            <Route path="/audit" element={<AuditLogPage />} />
-          </Route>
+            {/* Protected admin portal */}
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/students" element={<StudentsPage />} />
+              <Route path="/sessions" element={<SessionsPage />} />
+              <Route path="/classrooms" element={<ClassroomsPage />} />
+              <Route path="/notices" element={<NoticesPage />} />
+              <Route path="/users" element={<UsersPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/live" element={<LiveRecognitionPage />} />
+              <Route path="/audit" element={<AuditLogPage />} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </NotificationProvider>
       </WebSocketProvider>
     </AuthProvider>
   )

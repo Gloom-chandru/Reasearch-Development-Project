@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useWebSocket } from '../contexts/WebSocketContext'
+import { useNotification } from '../contexts/NotificationContext'
 import {
   LayoutDashboard,
   Users,
@@ -41,11 +42,65 @@ const NAV_ITEMS = [
 export default function Layout() {
   const { user, logout } = useAuth()
   const { connected } = useWebSocket()
+  const { notify } = useNotification()
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileDropdown, setProfileDropdown] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
+  const [updateIdx, setUpdateIdx] = useState(0)
+
+  // Sample live updates array for testing/demonstration of the novel bottom-right pop effect
+  const sampleUpdates = [
+    {
+      title: 'Live Attendance Confirmed: Section A',
+      message: 'Senthil Murugan (22AIDS1A001) marked Present with 99.4% confidence • AIDS-1A',
+      type: 'attendance',
+      category: 'LIVE ATTENDANCE',
+      action: { label: 'View Live Classroom →', to: '/live' }
+    },
+    {
+      title: 'Section B Attendance Sync',
+      message: 'Abishek Sengottaiyan (22AIDS1B001) marked Present with 98.8% confidence • AIDS-1B',
+      type: 'attendance',
+      category: 'SECTION B UPDATE',
+      action: { label: 'View Live Classroom →', to: '/live' }
+    },
+    {
+      title: 'Campus Notice Published',
+      message: 'Machine Learning Project Submissions due by Friday 5:00 PM • AI & DS Dept',
+      type: 'notice',
+      category: 'CAMPUS NOTICE',
+      action: { label: 'Open Notices →', to: '/notices' }
+    },
+    {
+      title: 'System Health Check: Optimal',
+      message: 'Edge AI recognition pipeline active • Latency 24ms • 60 FPS Camera feed',
+      type: 'info',
+      category: 'SYSTEM UPDATE',
+      action: { label: 'View Analytics →', to: '/analytics' }
+    }
+  ]
+
+  const handleBellClick = () => {
+    const item = sampleUpdates[updateIdx % sampleUpdates.length]
+    setUpdateIdx((i) => i + 1)
+    notify(item)
+  }
+
+  // Pop initial live welcome alert on startup
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      notify({
+        title: 'Smart Classroom AIoT Active',
+        message: 'Connected to Section A (AIDS-1A) and Section B (AIDS-1B) live edge nodes.',
+        type: 'info',
+        category: 'SYSTEM UPDATE',
+        action: { label: 'Monitor Live Session →', to: '/live' }
+      })
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [notify])
 
   const handleLogout = () => {
     logout()
@@ -201,9 +256,13 @@ export default function Layout() {
                 </div>
 
                 {/* Notification Bell */}
-                <button className="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors">
-                  <Bell className="w-4 h-4" />
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                <button
+                  onClick={handleBellClick}
+                  title="Click to view live updates & notifications (pops bottom-right)"
+                  className="relative p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer group"
+                >
+                  <Bell className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white animate-pulse">
                     3
                   </span>
                 </button>

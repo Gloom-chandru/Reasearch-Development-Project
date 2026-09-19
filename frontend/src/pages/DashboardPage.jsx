@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
+import AttendanceOverview from '../components/AttendanceOverview'
 import {
   Users,
   UserCheck,
@@ -308,70 +309,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 3. Middle Section — 3 Columns Grid */}
+      {/* 3. Attendance Overview — Dual Section UI (Section A & Section B) with Motion Effects */}
+      <AttendanceOverview />
+
+      {/* 4. Middle Section — Face Enrollment Progress & Today's Sessions */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Column 1: Attendance Overview Bar Chart */}
+        {/* Column 1: Face Enrollment Progress */}
         <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-blue-600" />
-              <h3 className="font-bold text-slate-900 text-sm">Attendance Overview</h3>
-            </div>
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl gap-1 text-[11px] font-semibold">
-              {['Today', 'This Week', 'This Month'].map((tf) => (
-                <button
-                  key={tf}
-                  onClick={() => setActiveTimeframe(tf)}
-                  className={`px-2.5 py-1 rounded-lg transition-all ${
-                    activeTimeframe === tf
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {tf}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Bar Chart Visualization */}
-          <div className="h-48 flex items-end justify-between gap-2 pt-4 px-2">
-            {chartData.map((item, idx) => (
-              <div key={item.date || idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                <div className="w-full flex items-end justify-center gap-1 h-36">
-                  {/* Green Present Bar */}
-                  <div
-                    className="w-3 bg-emerald-400 rounded-t-md transition-all hover:bg-emerald-500"
-                    style={{ height: `${Math.max(item.present > 0 ? 12 : 4, (item.present / maxChartVal) * 100)}%` }}
-                    title={`Present: ${item.present}`}
-                  />
-                  {/* Red Absent Bar */}
-                  <div
-                    className="w-3 bg-rose-400 rounded-t-md transition-all hover:bg-rose-500"
-                    style={{ height: `${Math.max(item.absent > 0 ? 12 : 4, (item.absent / maxChartVal) * 100)}%` }}
-                    title={`Absent: ${item.absent}`}
-                  />
-                </div>
-                <span className="text-[10px] font-bold text-slate-500">{item.label || item.day}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Legend */}
-          <div className="flex items-center justify-center gap-6 mt-4 pt-3 border-t border-slate-100 text-xs font-semibold">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-md bg-emerald-400" />
-              <span className="text-slate-600">Present</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-md bg-rose-400" />
-              <span className="text-slate-600">Absent</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Column 2: Face Enrollment Progress */}
-        <div className="lg:col-span-3 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Fingerprint className="w-5 h-5 text-blue-600" />
@@ -425,8 +369,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Column 3: Today's Sessions */}
-        <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+        {/* Column 2: Today's Sessions */}
+        <div className="lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
