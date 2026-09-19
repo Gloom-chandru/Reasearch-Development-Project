@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import time
+import uuid
 from collections import defaultdict
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import DefaultDict, List
 
 from fastapi import FastAPI, Request, Response
@@ -13,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from app.config import settings
 from app.database import engine, Base
-from app.utils.logging import logger
+from app.utils.logging import logger, request_id_ctx
 
 # ── Import all models so they register with Base.metadata ──────────
 from app.models import *  # noqa: F401, F403
@@ -70,9 +72,26 @@ def _record_auth_failure(ip: str) -> None:
 async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
     logger.info("Starting Smart Classroom backend...")
-    # Create tables (use Alembic in production for schema migrations)
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables verified/created.")
+
+    # Run Alembic migrations if AUTO_MIGRATE is True
+    if settings.AUTO_MIGRATE:
+        try:
+            from alembic.config import Config
+            from alembic import command
+            ini_path = Path(__file__).resolve().parent.parent / "alembic.ini"
+            if ini_path.exists():
+                alembic_cfg = Config(str(ini_path))
+                command.upgrade(alembic_cfg, "head")
+                logger.info("Alembic schema migrations applied successfully.")
+            else:
+                logger.warning(f"alembic.ini not found at {ini_path}, running Base.metadata.create_all.")
+                Base.metadata.create_all(bind=engine)
+        except Exception as e:
+            logger.warning(f"Alembic auto-migration failed: {e}. Falling back to create_all.")
+            Base.metadata.create_all(bind=engine)
+    elif settings.DEV_CREATE_ALL:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created via Base.metadata.create_all.")
 
     # Seed default super_admin user if the users table is empty
     from app.database import SessionLocal
@@ -114,6 +133,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ── Request ID middleware ──────────────────────────────────────────
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    """Assign a unique X-Request-ID to each incoming request and propagate it."""
+    req_id = request.headers.get(settings.REQUEST_ID_HEADER) or uuid.uuid4().hex
+    token = request_id_ctx.set(req_id)
+    try:
+        response: Response = await call_next(request)
+        response.headers[settings.REQUEST_ID_HEADER] = req_id
+        return response
+    finally:
+        request_id_ctx.reset(token)
 
 
 # ── Auth rate-limiting middleware ──────────────────────────────────

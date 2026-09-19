@@ -120,6 +120,8 @@ class ConnectionManager:
             payload["status"] = status
         if title is not None:
             payload["title"] = title
+        return await self.broadcast(classroom_id, payload)
+
     async def connect_analytics(self, websocket: WebSocket, skip_accept: bool = False) -> None:
         """Register a WebSocket client for real-time analytics updates."""
         if not skip_accept:

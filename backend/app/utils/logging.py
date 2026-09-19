@@ -5,11 +5,14 @@ from __future__ import annotations
 import json
 import logging
 import sys
+import contextvars
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 from app.config import settings, get_log_level
+
+request_id_ctx: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("request_id_ctx", default=None)
 
 
 class StructuredFormatter(logging.Formatter):
@@ -25,6 +28,10 @@ class StructuredFormatter(logging.Formatter):
             "function": record.funcName,
             "line": record.lineno,
         }
+        req_id = getattr(record, "request_id", None) or request_id_ctx.get()
+        if req_id:
+            log_entry["request_id"] = req_id
+
         if hasattr(record, "extra"):
             log_entry["extra"] = record.extra
         if record.exc_info and record.exc_info[0]:

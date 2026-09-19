@@ -35,8 +35,10 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal, get_db
 from app.utils.dependencies import get_current_user, require_role
 from app.utils.security import decode_access_token
+from app.config import settings
 from app.models.user import User
 from app.repositories.repository_sessions import (
+    AttendanceConfigurationRepository,
     AttendanceSessionRepository,
     ClassroomRepository,
 )
@@ -50,40 +52,44 @@ router = APIRouter(tags=["websocket"])
 WS_AUTH_TIMEOUT_SECONDS = 5
 
 
-
 async def _authenticate_websocket(websocket: WebSocket) -> Optional[User]:
-    """Wait for the client auth frame and validate the JWT.
+    """Authenticate WebSocket connection via cookie or first auth message.
 
     Returns the authenticated User on success, or None on failure/timeout.
     Sends auth_ok / auth_error back to the client.
     """
-    try:
-        raw = await asyncio.wait_for(
-            websocket.receive_text(),
-            timeout=WS_AUTH_TIMEOUT_SECONDS,
-        )
-        msg = json.loads(raw)
-    except asyncio.TimeoutError:
+    token = websocket.cookies.get(settings.COOKIE_NAME)
+
+    if not token:
+        try:
+            raw = await asyncio.wait_for(
+                websocket.receive_text(),
+                timeout=WS_AUTH_TIMEOUT_SECONDS,
+            )
+            msg = json.loads(raw)
+            if msg.get("type") == "auth":
+                token = msg.get("token")
+        except asyncio.TimeoutError:
+            await websocket.send_text(json.dumps({
+                "type": "auth_error",
+                "detail": f"Authentication timeout — send {{\"type\":\"auth\",\"token\":\"<JWT>\"}} within {WS_AUTH_TIMEOUT_SECONDS}s",
+            }))
+            return None
+        except Exception:
+            await websocket.send_text(json.dumps({
+                "type": "auth_error",
+                "detail": "Invalid message format — expected JSON",
+            }))
+            return None
+
+    if not token:
         await websocket.send_text(json.dumps({
             "type": "auth_error",
-            "detail": f"Authentication timeout — send {{\"type\":\"auth\",\"token\":\"<JWT>\"}} within {WS_AUTH_TIMEOUT_SECONDS}s",
-        }))
-        return None
-    except Exception:
-        await websocket.send_text(json.dumps({
-            "type": "auth_error",
-            "detail": "Invalid message format — expected JSON",
+            "detail": 'Authentication required: provide cookie or send {"type":"auth","token":"<JWT>"}',
         }))
         return None
 
-    if msg.get("type") != "auth" or not msg.get("token"):
-        await websocket.send_text(json.dumps({
-            "type": "auth_error",
-            "detail": 'First message must be {"type":"auth","token":"<JWT>"}',
-        }))
-        return None
-
-    payload = decode_access_token(msg["token"])
+    payload = decode_access_token(token)
     if payload is None:
         await websocket.send_text(json.dumps({
             "type": "auth_error",
@@ -118,11 +124,11 @@ async def _authenticate_websocket(websocket: WebSocket) -> Optional[User]:
         "user": user.username,
         "role": user.role.value if hasattr(user.role, "value") else user.role,
     }))
-    logger.info(f"WS authenticated: user={user.username} classroom_id from path")
+    logger.info(f"WS authenticated: user={user.username}")
     return user
 
 
-# ── WebSocket endpoint ────────────────────────────────────────────────────────
+# ── WebSocket endpoint: Classroom Display ────────────────────────────────────
 
 @router.websocket("/ws/classroom/{classroom_id}")
 async def classroom_websocket(websocket: WebSocket, classroom_id: int):
@@ -130,7 +136,7 @@ async def classroom_websocket(websocket: WebSocket, classroom_id: int):
 
     Protocol:
       1. Connect
-      2. Send {"type":"auth","token":"<JWT>"} immediately
+      2. Cookie auth or send {"type":"auth","token":"<JWT>"} immediately
       3. Receive {"type":"auth_ok"} or {"type":"auth_error"} + close
       4. Receive attendance_confirmed / session_state / led_event events
       5. Send {"type":"ping"} to keep alive; receive {"type":"pong"}
@@ -161,6 +167,35 @@ async def classroom_websocket(websocket: WebSocket, classroom_id: int):
         manager.disconnect(websocket, classroom_id)
 
 
+# ── WebSocket endpoint: Analytics Stream ──────────────────────────────────────
+
+@router.websocket("/ws/analytics")
+async def analytics_websocket(websocket: WebSocket):
+    """Authenticated WebSocket for live experiment results and research telemetry."""
+    await websocket.accept()
+
+    user = await _authenticate_websocket(websocket)
+    if user is None:
+        await websocket.close(code=4001)
+        return
+
+    await manager.connect_analytics(websocket, skip_accept=True)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            try:
+                msg = json.loads(data)
+                if msg.get("type") == "ping":
+                    await websocket.send_text(json.dumps({"type": "pong"}))
+            except json.JSONDecodeError:
+                pass
+    except WebSocketDisconnect:
+        manager.disconnect_analytics(websocket)
+    except Exception as e:
+        logger.warning(f"Analytics WebSocket error: {e}")
+        manager.disconnect_analytics(websocket)
+
+
 # ── REST frame submission endpoint ────────────────────────────────────────────
 
 @router.post("/ws/recognize/{classroom_id}")
@@ -182,6 +217,15 @@ async def recognize_frame(
     Returns:
         Pipeline results for all detected faces
     """
+    # Check threshold validation gate
+    cfg_repo = AttendanceConfigurationRepository(db)
+    cfg = cfg_repo.get_for_classroom(classroom_id)
+    if not cfg or not cfg.threshold_validated:
+        return {
+            "error": "Recognition blocked: Operating threshold has not been empirically validated for this classroom. Run a threshold sweep before live recognition.",
+            "threshold_validated": False,
+        }
+
     # Decode image
     try:
         image_bytes = base64.b64decode(image_data)

@@ -63,7 +63,9 @@ class AuthService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Account is deactivated",
             )
+        import secrets
         token = create_access_token(data={"sub": user.id})
+        csrf_token = secrets.token_urlsafe(32)
         self._audit(
             user_id=user.id,
             action="login",
@@ -73,7 +75,12 @@ class AuthService:
             ip=ip_address,
         )
         logger.info(f"User login: {user.username} ({user.role})")
-        return {"access_token": token, "token_type": "bearer", "user": user}
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "csrf_token": csrf_token,
+            "user": user,
+        }
 
     def create_user(self, data: UserCreate, created_by_id: int = None):
         existing = self.user_repo.get_by_username(data.username)
@@ -143,3 +150,19 @@ class AuthService:
         )
         self._sys_event("warning", f"User deactivated: {user.username}")
         return {"message": f"User {user.username} deactivated"}
+
+    def reactivate_user(self, user_id: int, reactivated_by_id: int = None):
+        """Re-activate a previously deactivated user."""
+        user = self.user_repo.get(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        self.user_repo.update(user_id, is_active=True)
+        self._audit(
+            user_id=reactivated_by_id,
+            action="reactivate_user",
+            entity_type="user",
+            entity_id=user_id,
+            details=f"Reactivated user '{user.username}'",
+        )
+        self._sys_event("info", f"User reactivated: {user.username}")
+        return {"message": f"User {user.username} reactivated"}

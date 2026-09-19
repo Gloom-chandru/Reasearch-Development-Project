@@ -4,27 +4,49 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from app.config import settings
 
-from app.database import get_db
-from app.utils.dependencies import get_current_user, require_role
-from app.schemas.auth import LoginRequest, LoginResponse, UserCreate, UserResponse
-from app.services.auth_service import AuthService
-from app.models.user import User
-
-router = APIRouter(prefix="/api/auth", tags=["auth"])
-
-
-# ── Login ──────────────────────────────────────────────────────────────────────
+# ── Login & Logout ─────────────────────────────────────────────────────────────
 
 @router.post("/login", response_model=LoginResponse)
-def login(request: LoginRequest, req: Request, db: Session = Depends(get_db)):
-    """Authenticate and return a JWT.  IP address is captured for audit logging."""
+def login(request: LoginRequest, req: Request, response: Response, db: Session = Depends(get_db)):
+    """Authenticate, issue JWT and CSRF token, and set httpOnly cookie."""
     ip = req.client.host if req.client else None
     service = AuthService(db)
-    return service.login(request, ip_address=ip)
+    result = service.login(request, ip_address=ip)
+
+    # Set httpOnly cookie for access token (SameSite=Lax per Section 0.1)
+    response.set_cookie(
+        key=settings.COOKIE_NAME,
+        value=result["access_token"],
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
+
+    # Set non-httpOnly cookie for CSRF token (readable by frontend JS)
+    response.set_cookie(
+        key=settings.CSRF_COOKIE_NAME,
+        value=result["csrf_token"],
+        httponly=False,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
+
+    return result
+
+
+@router.post("/logout")
+def logout(response: Response):
+    """Clear auth and CSRF cookies."""
+    response.delete_cookie(key=settings.COOKIE_NAME, path="/")
+    response.delete_cookie(key=settings.CSRF_COOKIE_NAME, path="/")
+    return {"message": "Logged out"}
 
 
 # ── User management ────────────────────────────────────────────────────────────
@@ -95,15 +117,5 @@ def reactivate_user(
     current_user: User = Depends(require_role("super_admin")),
 ):
     """Re-activate a previously deactivated user."""
-    from app.repositories.repository_core import UserRepository
-    from app.repositories.repository_logging import AuditLogRepository
-    repo = UserRepository(db)
-    user = repo.get(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    repo.update(user_id, is_active=True)
-    AuditLogRepository(db).create(
-        user_id=current_user.id, action="reactivate_user",
-        entity_type="user", entity_id=user_id,
-    )
-    return {"message": f"User {user.username} reactivated"}
+    service = AuthService(db)
+    return service.reactivate_user(user_id, reactivated_by_id=current_user.id)
