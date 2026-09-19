@@ -41,7 +41,15 @@ def run_smoke_test():
 
     # 4. Routers
     from app.main import app
-    routes = [r.path for r in app.routes if hasattr(r, 'path')]
+    routes = []
+    for r in app.routes:
+        if hasattr(r, 'path'):
+            routes.append(r.path)
+        if hasattr(r, 'original_router') and hasattr(r.original_router, 'routes'):
+            for sub_r in r.original_router.routes:
+                if hasattr(sub_r, 'path'):
+                    routes.append(sub_r.path)
+
     api_routes = [r for r in routes if r.startswith('/api')]
     ws_routes  = [r for r in routes if r.startswith('/ws')]
     print(f'\nAPI routes: {len(api_routes)}')

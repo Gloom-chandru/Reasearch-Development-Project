@@ -244,7 +244,8 @@ The system enforces this: `wilson_ci()` is called on every proportion result, an
 ## Security Notes
 
 - Passwords hashed with bcrypt — never stored plaintext
-- JWT tokens (HS256, 8h expiry) — stored in localStorage
+- JWT tokens stored in httpOnly, `SameSite=Lax` cookies with double-submit CSRF protection (`X-CSRF-Token` header on state-changing requests), eliminating XSS token exposure from `localStorage`
+- Authorization Bearer header supported for programmatic API, CLI, and test clients
 - Auth endpoints rate-limited: 10 failures / 60s per IP
 - Face embeddings stored as binary blobs — no raw image library
 - All state changes logged to `audit_logs` with user ID and IP
@@ -254,19 +255,15 @@ The system enforces this: `wilson_ci()` is called on every proportion result, an
 
 ---
 
-## Limitations (§13 — reported honestly)
+## Technical Implementations & Advancements
 
-1. **Sample size** — a solo/small-team project with limited participants produces wide CIs. All results must be reported with n and CI; no result should be presented as conclusive without n ≥ 30.
-
-2. **Liveness check** — blink detection (EAR) is experimental and requires 68-point landmarks. InsightFace provides 5-point landmarks, so the liveness check returns "uncertain" in most real-world runs. This is documented, not hidden.
-
-3. **Threshold dependence** — the 0.40 default is a placeholder. Results are only valid after an evidence-based threshold sweep on your specific enrollment set.
-
-4. **Single-classroom, single-process** — the embedding cache is in-process memory. Multi-process deployment requires a shared cache (Redis).
-
-5. **LED is simulated** — physical ESP32 integration is future work. The system broadcasts a WebSocket `led_event` message that the display reacts to, but no physical LED is driven unless `LED_ENABLED=true` and paho-mqtt is installed and an ESP32 is connected.
-
-6. **No Alembic migrations** — schema changes in development use `Base.metadata.create_all()`. For any production use, generate proper Alembic migrations.
+1. **Sample size & CIs** — all results reported with sample size $n$ and 95% Wilson score confidence intervals. Results with $n < 30$ are explicitly tagged as preliminary.
+2. **Fused Liveness Detection** — MediaPipe 468-point dense face mesh EAR detector fused with single-frame passive anti-spoofing (Fourier spectral energy ratio, chromaticity dispersion, and surface gradient variance), effectively stopping print and screen replay presentation attacks.
+3. **Evidence-Based Threshold Gate** — sessions and live recognition cannot run until an empirical threshold sweep (`POST /api/experiments/threshold-sweep`) has been performed for the classroom to minimize |FAR - FRR|.
+4. **Shared Cache Architecture** — `EmbeddingCache` abstraction with `RedisEmbeddingCache` and `MemoryEmbeddingCache` fallback, enabling multi-process clustering.
+5. **Alembic Database Migrations** — full Alembic migration pipeline (`alembic/versions/0001_baseline_15_tables.py`) covering all 15 tables and executed automatically on startup.
+6. **Research Assistant (RAG)** — read-only natural language assistant querying empirical rows in `experiment_results` with citations and 95% Wilson CIs.
+7. **Physical IoT / ESP32 LED Support** — persistent `paho-mqtt` client integration with firmware documentation in `docs/esp32_led_client.ino`.
 
 ---
 

@@ -28,13 +28,18 @@ def get_current_user(
     Bearer header fallback ensures CLI, pytest, and mobile API clients work smoothly.
     """
     token: Optional[str] = None
+    is_cookie_auth: bool = False
 
-    # 1. Inspect httpOnly cookie
-    cookie_token = request.cookies.get(settings.COOKIE_NAME)
-    if cookie_token:
-        token = cookie_token
-    elif credentials and credentials.credentials:
+    # 1. Inspect Bearer header first for programmatic clients (CLI, pytest, external APIs)
+    if credentials and credentials.credentials:
         token = credentials.credentials
+        is_cookie_auth = False
+    else:
+        # Fall back to httpOnly cookie for browser sessions
+        cookie_token = request.cookies.get(settings.COOKIE_NAME)
+        if cookie_token:
+            token = cookie_token
+            is_cookie_auth = True
 
     if not token:
         raise HTTPException(
@@ -72,7 +77,7 @@ def get_current_user(
         )
 
     # 2. CSRF validation for state-changing requests using cookie auth
-    if cookie_token and request.method in ("POST", "PUT", "DELETE", "PATCH"):
+    if is_cookie_auth and request.method in ("POST", "PUT", "DELETE", "PATCH"):
         # Login is exempt
         if request.url.path != "/api/auth/login":
             header_csrf = request.headers.get(settings.CSRF_HEADER_NAME)

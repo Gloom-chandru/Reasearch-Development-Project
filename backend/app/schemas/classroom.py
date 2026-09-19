@@ -31,6 +31,8 @@ class ClassroomResponse(BaseModel):
     entry_zone_x2: float
     entry_zone_y2: float
     is_active: bool
+    threshold_validated: bool = False
+    recognition_threshold: float = 0.40
 
 
 class ClassroomListResponse(BaseModel):

@@ -33,9 +33,11 @@ import {
   XCircle,
   Zap,
   Shield,
+  ShieldCheck,
   Eye,
   RefreshCw,
 } from 'lucide-react'
+import ThresholdSweepModal from '../components/ThresholdSweepModal'
 
 const API = '/api'
 const CAPTURE_INTERVAL_MS = 1500
@@ -66,6 +68,10 @@ export default function LiveRecognitionPage() {
   const [isMobileMode, setIsMobileMode] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
+  const [showSweepModal, setShowSweepModal] = useState(false)
+
+  const currentClassroom = classrooms.find(c => String(c.id) === String(selectedClassroom))
+  const isThresholdValidated = currentClassroom?.threshold_validated === true
 
   // ── Recognition state ────────────────────────────────────────
   const [recentResults, setRecentResults] = useState([])
@@ -345,6 +351,11 @@ export default function LiveRecognitionPage() {
   const handleStart = async () => {
     if (!selectedClassroom || !selectedSession) {
       setStatusMsg('Select a classroom and session first')
+      return
+    }
+    if (!isThresholdValidated) {
+      setShowSweepModal(true)
+      setStatusMsg('Empirical threshold sweep required before starting recognition.')
       return
     }
     await startCamera()
@@ -648,6 +659,31 @@ export default function LiveRecognitionPage() {
         </div>
       </div>
 
+      {/* Threshold Validation Warning Banner */}
+      {selectedClassroom && !isThresholdValidated && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-100 text-amber-700 rounded-xl">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-amber-900">Unvalidated Operating Threshold</p>
+              <p className="text-xs text-amber-700">
+                Live recognition cannot start until an empirical threshold sweep has been performed for {currentClassroom?.name} to minimize |FAR - FRR|.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSweepModal(true)}
+            className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shrink-0 flex items-center gap-1.5 shadow-sm transition-colors"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            Run Threshold Sweep
+          </button>
+        </div>
+      )}
+
       {/* Config Row */}
       <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -922,6 +958,19 @@ export default function LiveRecognitionPage() {
           </div>
         </div>
       </div>
+
+      {/* Threshold Sweep Modal */}
+      {showSweepModal && currentClassroom && (
+        <ThresholdSweepModal
+          classroom={currentClassroom}
+          onClose={() => setShowSweepModal(false)}
+          onSuccess={(newThr) => {
+            setClassrooms(prev => prev.map(c => c.id === currentClassroom.id ? { ...c, threshold_validated: true, recognition_threshold: newThr } : c))
+            setShowSweepModal(false)
+            setStatusMsg(`Calibrated threshold to ${newThr.toFixed(2)}. Ready to start.`)
+          }}
+        />
+      )}
     </div>
   )
 }

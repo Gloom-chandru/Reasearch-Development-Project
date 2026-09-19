@@ -186,8 +186,9 @@ def auth_headers(auth_token: str) -> dict:
 def sample_classroom(db: Session):
     """Create a sample classroom for tests."""
     from app.repositories.repository_sessions import ClassroomRepository
+    from app.models.config import AttendanceConfiguration
     repo = ClassroomRepository(db)
-    return repo.create(
+    classroom = repo.create(
         name="Test Room 101",
         code="TR101",
         floor=1,
@@ -197,6 +198,14 @@ def sample_classroom(db: Session):
         entry_zone_x2=0.8,
         entry_zone_y2=0.8,
     )
+    cfg = AttendanceConfiguration(
+        classroom_id=classroom.id,
+        recognition_threshold=0.40,
+        threshold_validated=True,
+    )
+    db.add(cfg)
+    db.commit()
+    return classroom
 
 
 @pytest.fixture

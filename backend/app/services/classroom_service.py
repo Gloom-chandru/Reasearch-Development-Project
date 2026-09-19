@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.models.classroom import Classroom
 from app.repositories.repository_core import ClassroomEnrollmentRepository, StudentRepository
 from app.repositories.repository_logging import AuditLogRepository
-from app.repositories.repository_sessions import ClassroomRepository
+from app.repositories.repository_sessions import ClassroomRepository, AttendanceConfigurationRepository
 
 
 class ClassroomService:
@@ -20,6 +20,7 @@ class ClassroomService:
         self.enrollment_repo = ClassroomEnrollmentRepository(db)
         self.student_repo = StudentRepository(db)
         self.audit_repo = AuditLogRepository(db)
+        self.config_repo = AttendanceConfigurationRepository(db)
 
     def create_classroom(self, data: dict, user_id: int) -> Classroom:
         classroom = self.classroom_repo.create(**data)
@@ -30,15 +31,26 @@ class ClassroomService:
             entity_id=classroom.id,
             details=f"Created classroom '{classroom.name}' ({classroom.code})",
         )
+        cfg = self.config_repo.get_for_classroom(classroom.id)
+        classroom.threshold_validated = cfg.threshold_validated if cfg else False
+        classroom.recognition_threshold = cfg.recognition_threshold if cfg else 0.40
         return classroom
 
     def list_classrooms(self) -> List[Classroom]:
-        return self.classroom_repo.list()
+        classrooms = self.classroom_repo.list()
+        for c in classrooms:
+            cfg = self.config_repo.get_for_classroom(c.id)
+            c.threshold_validated = cfg.threshold_validated if cfg else False
+            c.recognition_threshold = cfg.recognition_threshold if cfg else 0.40
+        return classrooms
 
     def get_classroom(self, classroom_id: int) -> Classroom:
         classroom = self.classroom_repo.get(classroom_id)
         if not classroom:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Classroom not found")
+        cfg = self.config_repo.get_for_classroom(classroom.id)
+        classroom.threshold_validated = cfg.threshold_validated if cfg else False
+        classroom.recognition_threshold = cfg.recognition_threshold if cfg else 0.40
         return classroom
 
     def update_classroom(self, classroom_id: int, data: dict, user_id: int) -> Classroom:

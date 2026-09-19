@@ -4,46 +4,63 @@ import axios from 'axios'
 const API_BASE = '/api'
 const AuthContext = createContext(null)
 
+// Enable cookie sending across all requests
+axios.defaults.withCredentials = true
+
+// Helper to extract CSRF token from document.cookie
+export function getCsrfToken() {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(new RegExp('(^|;\\s*)csrf_token=([^;]*)'))
+  return match ? decodeURIComponent(match[2]) : null
+}
+
+// Attach X-CSRF-Token on state-changing requests
+axios.interceptors.request.use((config) => {
+  const method = config.method ? config.method.toLowerCase() : ''
+  if (['post', 'put', 'delete', 'patch'].includes(method)) {
+    const csrfToken = getCsrfToken()
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken
+    }
+  }
+  return config
+})
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [token, setToken] = useState(localStorage.getItem('token'))
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      axios.get(`${API_BASE}/auth/me`)
-        .then(res => setUser(res.data))
-        .catch(() => {
-          localStorage.removeItem('token')
-          setToken(null)
-          delete axios.defaults.headers.common['Authorization']
-        })
-        .finally(() => setLoading(false))
-    } else {
-      setLoading(false)
-    }
-  }, [token])
+    // Check active session via httpOnly cookie on initial mount
+    axios.get(`${API_BASE}/auth/me`)
+      .then(res => {
+        setUser(res.data)
+      })
+      .catch(() => {
+        setUser(null)
+      })
+      .finally(() => setLoading(false))
+  }, [])
 
   const login = async (username, password) => {
     const res = await axios.post(`${API_BASE}/auth/login`, { username, password })
-    const { access_token, user: userData } = res.data
-    localStorage.setItem('token', access_token)
-    axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-    setToken(access_token)
+    const { user: userData } = res.data
     setUser(userData)
     return userData
   }
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    delete axios.defaults.headers.common['Authorization']
-    setToken(null)
-    setUser(null)
+  const logout = async () => {
+    try {
+      await axios.post(`${API_BASE}/auth/logout`)
+    } catch {
+      // Ignore network errors on logout
+    } finally {
+      setUser(null)
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, getCsrfToken }}>
       {children}
     </AuthContext.Provider>
   )

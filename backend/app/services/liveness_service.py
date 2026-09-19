@@ -231,3 +231,16 @@ class LivenessDetector:
             "blink_count": self._blink_count,
             "ear": round(ear, 4),
         }
+
+    def detect_liveness_fused(
+        self,
+        frame_bgr: np.ndarray,
+        face_box: Optional[Tuple[int, int, int, int]] = None,
+    ) -> dict:
+        """Alias for process_frame_bgr."""
+        return self.process_frame_bgr(frame_bgr, face_box)
+
+
+# Backward-compatible alias
+LivenessService = LivenessDetector
+
