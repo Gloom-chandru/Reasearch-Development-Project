@@ -17,10 +17,22 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./classroom.db"
 
-    # JWT
+    # JWT & Cookie Auth
     SECRET_KEY: str = "change-this-to-a-long-random-string-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
+    COOKIE_NAME: str = "access_token"
+    COOKIE_SECURE: bool = False
+    COOKIE_SAMESITE: str = "lax"  # Shipped default per Section 0.1
+    CSRF_COOKIE_NAME: str = "csrf_token"
+    CSRF_HEADER_NAME: str = "X-CSRF-Token"
+
+    # Shared Cache (Redis)
+    REDIS_URL: Optional[str] = None
+
+    # Database Migrations
+    AUTO_MIGRATE: bool = True
+    DEV_CREATE_ALL: bool = False
 
     # Recognition
     RECOGNITION_MODEL: str = "insightface"
@@ -28,6 +40,10 @@ class Settings(BaseSettings):
     MIN_FACE_SIZE: int = 80
     BLUR_THRESHOLD: float = 80.0
     FACE_CONFIRMATION_FRAMES: int = 5
+
+    # Liveness & Anti-Spoofing
+    PASSIVE_LIVENESS_ENABLED: bool = True
+    PASSIVE_LIVENESS_THRESHOLD: float = 0.50
 
     # Session timing defaults
     SESSION_START_OFFSET_MINUTES: int = 0
@@ -42,9 +58,10 @@ class Settings(BaseSettings):
     RATE_LIMIT_WINDOW_SECONDS: int = 60      # sliding window duration
     RATE_LIMIT_MAX_FAILURES: int = 10        # failures before blocking
 
-    # Logging
+    # Logging & Observability
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/classroom.log"
+    REQUEST_ID_HEADER: str = "X-Request-ID"
 
     # Initial admin seed password (override via ADMIN_PASSWORD env var)
     ADMIN_PASSWORD: str = "admin123"
@@ -55,6 +72,10 @@ class Settings(BaseSettings):
     MQTT_BROKER: str = "localhost"
     MQTT_PORT: int = 1883
     MQTT_TOPIC: str = "classroom/led"
+
+    # Research Assistant / LLM (optional; deterministic fallback active if unset)
+    LLM_API_KEY: Optional[str] = None
+    LLM_MODEL: str = "llama-3.3-70b-versatile"
 
 
 settings = Settings()

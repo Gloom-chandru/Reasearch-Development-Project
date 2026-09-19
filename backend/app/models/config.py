@@ -25,6 +25,7 @@ class AttendanceConfiguration(Base):
     late_end_offset: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     entry_zone_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     liveness_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    threshold_validated: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     def __repr__(self) -> str:
