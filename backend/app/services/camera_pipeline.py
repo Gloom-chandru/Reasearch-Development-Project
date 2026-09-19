@@ -133,6 +133,9 @@ class _EffectiveConfig:
         self.liveness_enabled: bool = (
             cfg.liveness_enabled if cfg is not None else False
         )
+        self.threshold_validated: bool = (
+            cfg.threshold_validated if cfg and cfg.threshold_validated is not None else False
+        )
 
     @classmethod
     def default(cls) -> "_EffectiveConfig":
@@ -144,6 +147,7 @@ class _EffectiveConfig:
         obj.late_start_offset = settings.SESSION_LATE_START_MINUTES
         obj.entry_zone_enabled = True
         obj.liveness_enabled = False
+        obj.threshold_validated = False
         return obj
 
 
@@ -186,6 +190,7 @@ class CameraPipeline:
         logger.debug(
             f"Pipeline configured for classroom={classroom.id} "
             f"threshold={self._cfg.recognition_threshold:.2f} "
+            f"validated={self._cfg.threshold_validated} "
             f"liveness={'on' if self._cfg.liveness_enabled else 'off'} "
             f"entry_zone={'on' if self._cfg.entry_zone_enabled else 'off'}"
         )
@@ -202,6 +207,14 @@ class CameraPipeline:
         """Process one video frame. Returns one PipelineResult per detected face."""
         results = []
         timestamps: dict = {"start": time.perf_counter()}
+
+        # ── Mandatory threshold validation check ──────────────────────────────
+        if self._classroom and not self._cfg.threshold_validated:
+            res = PipelineResult(
+                rejected=True,
+                reject_reason="Classroom requires an evidence-based threshold sweep before live recognition can be activated",
+            )
+            return [res]
 
         # ── Face detection ────────────────────────────────────────────────────
         faces = detect_faces(frame)
@@ -246,29 +259,7 @@ class CameraPipeline:
             else:
                 result.entry_zone = {"inside": True, "reason": "Entry zone disabled"}
 
-            # ── Liveness check (experimental) ─────────────────────────────────
-            if self._cfg.liveness_enabled:
-                # Pass the raw BGR frame — LivenessDetector calls MediaPipe internally
-                liveness_result = self.liveness.process_frame_bgr(frame)
-                result.liveness = liveness_result
-                timestamps["liveness"] = time.perf_counter()
-                # Reject confirmed spoof; allow "uncertain" through (still observing)
-                if liveness_result.get("liveness") == "spoof":
-                    result.rejected = True
-                    result.reject_reason = f"Liveness: {liveness_result.get('reason', 'spoof detected')}"
-                    timestamps["end"] = time.perf_counter()
-                    result.latency = _compute_latencies(timestamps)
-                    results.append(result)
-                    continue
-            else:
-                result.liveness = {
-                    "liveness": "not_checked",
-                    "reason": "Liveness disabled in classroom config",
-                    "landmark_source": "none",
-                }
-                timestamps["liveness"] = time.perf_counter()
-
-            # ── Recognition ───────────────────────────────────────────────────
+            # ── Embedding Generation & Recognition ────────────────────────────
             if self._recognition_service:
                 rec_result = self._recognition_service.identify(
                     frame, threshold=self._cfg.recognition_threshold
@@ -285,7 +276,27 @@ class CameraPipeline:
                 result.identity = rec_result.copy()
             timestamps["recognition"] = time.perf_counter()
 
-            # ── Attendance recording ──────────────────────────────────────────
+            # ── Liveness check (fused passive anti-spoofing + MediaPipe EAR) ─
+            if self._cfg.liveness_enabled:
+                liveness_result = self.liveness.process_frame_bgr(frame, face_box=face_box)
+                result.liveness = liveness_result
+                timestamps["liveness"] = time.perf_counter()
+                if liveness_result.get("liveness") == "spoof":
+                    result.rejected = True
+                    result.reject_reason = f"Liveness: {liveness_result.get('reason', 'spoof detected')}"
+                    timestamps["end"] = time.perf_counter()
+                    result.latency = _compute_latencies(timestamps)
+                    results.append(result)
+                    continue
+            else:
+                result.liveness = {
+                    "liveness": "not_checked",
+                    "reason": "Liveness disabled in classroom config",
+                    "landmark_source": "none",
+                }
+                timestamps["liveness"] = time.perf_counter()
+
+            # ── Attendance recording & Time-Window Classification ─────────────
             if (
                 self.db
                 and rec_result.get("decision") == "match"
@@ -345,7 +356,7 @@ class CameraPipeline:
                                         decision="match",
                                     )
                                 )
-                                # Trigger LED (simulated or physical)
+                                # Trigger LED (simulated or physical ESP32)
                                 try:
                                     from app.services.led_service import trigger_attendance_led
                                     trigger_attendance_led(

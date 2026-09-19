@@ -273,9 +273,7 @@ class RecognitionService:
 
         # Refresh cache from DB if dirty
         _refresh_cache_if_needed(self.embedding_repo)
-
-        with _cache_lock:
-            cache_snapshot = dict(_emb_cache)  # shallow copy under lock
+        cache_snapshot = get_embedding_cache().get_all()
 
         if not cache_snapshot:
             return {
@@ -286,7 +284,7 @@ class RecognitionService:
                 "reject_reason": "No enrolled embeddings in database",
             }
 
-        student_best = _faiss_search(query_emb, cache_snapshot)
+        student_best = VectorIndex.search(query_emb, cache_snapshot)
 
         if not student_best:
             return {

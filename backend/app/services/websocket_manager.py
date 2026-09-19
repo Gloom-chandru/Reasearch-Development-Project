@@ -120,8 +120,43 @@ class ConnectionManager:
             payload["status"] = status
         if title is not None:
             payload["title"] = title
-        payload.update(kwargs)
-        return await self.broadcast(classroom_id, payload)
+    async def connect_analytics(self, websocket: WebSocket, skip_accept: bool = False) -> None:
+        """Register a WebSocket client for real-time analytics updates."""
+        if not skip_accept:
+            await websocket.accept()
+        if not hasattr(self, "_analytics_connections"):
+            self._analytics_connections: Set[WebSocket] = set()
+        self._analytics_connections.add(websocket)
+        logger.info("WebSocket client connected to analytics stream")
+
+    def disconnect_analytics(self, websocket: WebSocket) -> None:
+        if hasattr(self, "_analytics_connections"):
+            self._analytics_connections.discard(websocket)
+        logger.info("WebSocket client disconnected from analytics stream")
+
+    async def broadcast_experiment_result(self, data: dict) -> int:
+        """Broadcast new experiment results to all connected analytics clients."""
+        if not hasattr(self, "_analytics_connections") or not self._analytics_connections:
+            return 0
+
+        payload = json.dumps({
+            "type": "experiment_result",
+            "timestamp": str(datetime.datetime.utcnow()),
+            "data": data,
+        })
+        disconnected = set()
+        count = 0
+        for ws in self._analytics_connections:
+            try:
+                await ws.send_text(payload)
+                count += 1
+            except Exception:
+                disconnected.add(ws)
+
+        for ws in disconnected:
+            self._analytics_connections.discard(ws)
+
+        return count
 
 
 # Global singleton

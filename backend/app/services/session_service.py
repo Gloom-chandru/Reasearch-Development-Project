@@ -122,6 +122,16 @@ class SessionService:
             raise HTTPException(status_code=400, detail="Session is already active")
         if session.status == "completed":
             raise HTTPException(status_code=400, detail="Cannot re-activate a completed session")
+
+        # Check mandatory threshold sweep validation (§2.1)
+        from app.repositories.repository_sessions import AttendanceConfigurationRepository
+        cfg = AttendanceConfigurationRepository(self.db).get_for_classroom(session.classroom_id)
+        if not cfg or not cfg.threshold_validated:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Classroom requires an evidence-based threshold sweep before live recognition can be activated.",
+            )
+
         session.status = "active"
         self.db.commit()
         logger.info(f"Activated session: {session_id}")
