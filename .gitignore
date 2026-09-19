@@ -1,0 +1,37 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+*.egg-info/
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Node
+node_modules/
+
+# Build output
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Test caches
+.pytest_cache/

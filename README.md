@@ -1,3 +1,11 @@
+---
+title: AIoT Smart Classroom
+emoji: 🎓
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # AIoT Smart Classroom — Real-Time Attendance & Communication System
 
 **Research project:** Design and Experimental Evaluation of an AIoT-Based Real-Time Smart Classroom Infrastructure for Automated Attendance and Intelligent Classroom Communication

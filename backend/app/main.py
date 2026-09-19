@@ -9,7 +9,7 @@ from typing import DefaultDict, List
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from app.config import settings
 from app.database import engine, Base
@@ -82,14 +82,16 @@ async def lifespan(app: FastAPI):
     try:
         user_repo = UserRepository(db)
         if not user_repo.list():
+            _admin_pw = settings.ADMIN_PASSWORD
             user_repo.create(
                 username="admin",
                 email="admin@classroom.local",
-                hashed_password=hash_password("admin123"),
+                hashed_password=hash_password(_admin_pw),
                 full_name="System Administrator",
                 role="super_admin",
             )
-            logger.info("Created default super_admin user (admin / admin123).")
+            logger.info("Created default super_admin user (admin / %s).",
+                        "***" if _admin_pw != "admin123" else "admin123")
     finally:
         db.close()
 
@@ -174,6 +176,43 @@ def health_check():
         "version": "1.0.0",
         "secret_key_secure": settings.SECRET_KEY != _INSECURE_DEFAULT,
     }
+
+
+# ── SPA static file serving (production / Docker) ──────────────────
+# Only enabled when a built frontend is present in backend/static/.
+import pathlib as _pathlib
+
+_STATIC_DIR = _pathlib.Path(__file__).resolve().parent.parent / "static"
+_RESERVED_ROOTS = ("api", "ws", "docs", "redoc", "openapi.json")
+
+if _STATIC_DIR.is_dir():
+    _STATIC_DIR_RESOLVED = _STATIC_DIR.resolve()
+
+    def _is_reserved(path: str) -> bool:
+        """Return True if `path` belongs to an API / docs / WebSocket route."""
+        first_segment = path.split("/", 1)[0]
+        return first_segment in _RESERVED_ROOTS
+
+    @app.get("/{full_path:path}")
+    async def _serve_spa(request: Request, full_path: str):
+        """Serve frontend assets or fall back to index.html for SPA routing."""
+        # Never intercept API / WebSocket / docs paths
+        if _is_reserved(full_path):
+            return JSONResponse(status_code=404, content={"detail": "Not found"})
+
+        # Resolve and guard against path traversal
+        file_path = (_STATIC_DIR / full_path).resolve()
+        if full_path and file_path.is_relative_to(_STATIC_DIR_RESOLVED) and file_path.is_file():
+            return FileResponse(file_path)
+
+        # Fall back to index.html for client-side routing
+        index = _STATIC_DIR_RESOLVED / "index.html"
+        if index.is_file():
+            return FileResponse(index)
+
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
+
+    logger.info("SPA serving enabled from %s", _STATIC_DIR)
 
 
 # ── Run (development) ──────────────────────────────────────────────

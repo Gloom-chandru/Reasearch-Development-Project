@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/classroom.log"
 
+    # Initial admin seed password (override via ADMIN_PASSWORD env var)
+    ADMIN_PASSWORD: str = "admin123"
+
     # LED / IoT
     LED_ENABLED: bool = False
     LED_MODE: str = "mqtt"  # or http
