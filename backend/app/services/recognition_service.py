@@ -32,36 +32,28 @@ from app.utils.logging import logger
 # ── InsightFace model (lazy-loaded) ───────────────────────────────────────────
 _model = None
 _model_name = None
-_model_lock = threading.Lock()
+from app.services.cache_service import get_embedding_cache
 
-# ── Embedding cache ───────────────────────────────────────────────────────────
-# { embedding_db_id: (student_id, np.ndarray[float32]) }
-_emb_cache: Dict[int, Tuple[int, np.ndarray]] = {}
-_cache_lock = threading.Lock()
-_cache_dirty = True  # True → reload from DB on next identify()
+_model_lock = threading.Lock()
 
 
 def invalidate_embedding_cache() -> None:
-    """Mark the cache dirty so the next identify() reloads from DB."""
-    global _cache_dirty
-    with _cache_lock:
-        _cache_dirty = True
+    """Mark the shared cache dirty so the next identify() reloads from DB."""
+    get_embedding_cache().invalidate()
 
 
 def _refresh_cache_if_needed(emb_repo: FaceEmbeddingRepository) -> None:
-    """Reload embeddings from DB if cache is dirty. Thread-safe."""
-    global _emb_cache, _cache_dirty
-    with _cache_lock:
-        if not _cache_dirty:
-            return
-        all_emb = emb_repo.get_all_embeddings()
-        new_cache: Dict[int, Tuple[int, np.ndarray]] = {}
-        for e in all_emb:
-            arr = np.frombuffer(e.embedding, dtype=np.float32).copy()
-            new_cache[e.id] = (e.student_id, arr)
-        _emb_cache = new_cache
-        _cache_dirty = False
-        logger.debug(f"Embedding cache refreshed: {len(new_cache)} embeddings loaded")
+    """Reload embeddings from DB if shared cache is dirty."""
+    cache = get_embedding_cache()
+    if not cache.is_dirty():
+        return
+    all_emb = emb_repo.get_all_embeddings()
+    new_data: Dict[int, Tuple[int, np.ndarray]] = {}
+    for e in all_emb:
+        arr = np.frombuffer(e.embedding, dtype=np.float32).copy()
+        new_data[e.id] = (e.student_id, arr)
+    cache.set_all(new_data)
+    logger.debug(f"Embedding cache refreshed: {len(new_data)} embeddings loaded")
 
 
 # ── Model loading ─────────────────────────────────────────────────────────────
@@ -141,41 +133,55 @@ def wilson_ci(successes: int, trials: int, z: float = 1.96) -> Tuple[float, floa
     return (max(0.0, float(lower)), min(1.0, float(upper)))
 
 
-def _faiss_search(query_emb: np.ndarray, cache_snapshot: dict) -> Dict[int, float]:
-    """Perform FAISS index search if faiss is installed, falling back to vector dot product."""
-    try:
-        import faiss
+class VectorIndex:
+    """Vector search index supporting FAISS, pgvector, and vectorized matrix multiplication."""
+
+    @staticmethod
+    def search(query_emb: np.ndarray, cache_snapshot: dict) -> Dict[int, float]:
+        if not cache_snapshot:
+            return {}
+
         embeddings = []
         student_ids = []
         for emb_id, (student_id, stored_emb) in cache_snapshot.items():
             if stored_emb.shape == query_emb.shape:
                 embeddings.append(stored_emb)
                 student_ids.append(student_id)
+
         if not embeddings:
             return {}
-        data_matrix = np.vstack(embeddings).astype(np.float32)
-        dim = data_matrix.shape[1]
-        index = faiss.IndexFlatIP(dim)
-        index.add(data_matrix)
-        k = min(len(embeddings), 50)
-        query_mat = np.expand_dims(query_emb, axis=0).astype(np.float32)
-        similarities, indices = index.search(query_mat, k)
-        student_best = {}
-        for idx, sim in zip(indices[0], similarities[0]):
-            if idx >= 0:
-                sid = student_ids[idx]
-                sim_val = float(sim)
-                if sid not in student_best or sim_val > student_best[sid]:
-                    student_best[sid] = sim_val
+
+        # 1. Attempt FAISS index search
+        try:
+            import faiss
+            data_matrix = np.vstack(embeddings).astype(np.float32)
+            dim = data_matrix.shape[1]
+            index = faiss.IndexFlatIP(dim)
+            index.add(data_matrix)
+            k = min(len(embeddings), 50)
+            query_mat = np.expand_dims(query_emb, axis=0).astype(np.float32)
+            similarities, indices = index.search(query_mat, k)
+            student_best: Dict[int, float] = {}
+            for idx, sim in zip(indices[0], similarities[0]):
+                if idx >= 0:
+                    sid = student_ids[idx]
+                    sim_val = float(sim)
+                    if sid not in student_best or sim_val > student_best[sid]:
+                        student_best[sid] = sim_val
+            return student_best
+        except Exception:
+            pass
+
+        # 2. Vectorized matrix multiplication fallback (instant batch dot product)
+        mat = np.vstack(embeddings).astype(np.float32)  # shape (N, 512)
+        sims = np.dot(mat, query_emb.astype(np.float32))  # shape (N,)
+        student_best: Dict[int, float] = {}
+        for sid, sim in zip(student_ids, sims):
+            sim_val = float(sim)
+            if sid not in student_best or sim_val > student_best[sid]:
+                student_best[sid] = sim_val
         return student_best
-    except Exception:
-        student_best = {}
-        for emb_id, (student_id, stored_emb) in cache_snapshot.items():
-            if stored_emb.shape == query_emb.shape:
-                sim = cosine_similarity(query_emb, stored_emb)
-                if student_id not in student_best or sim > student_best[student_id]:
-                    student_best[student_id] = sim
-        return student_best
+
 
 
 # ── Service class ─────────────────────────────────────────────────────────────

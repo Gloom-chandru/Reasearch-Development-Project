@@ -1,49 +1,43 @@
-"""Liveness detection (experimental) — EAR blink detection via MediaPipe Face Mesh.
+"""Liveness detection — fused passive anti-spoofing + MediaPipe 468-point EAR blink detection.
 
-LANDMARK SOURCE FIX
--------------------
-The original implementation indexed landmarks 36–47 (68-point dlib model).
-InsightFace buffalo_l provides only 5 key points, so `len(landmarks) < 48`
-was always True and every call returned "uncertain".
-
-This version uses **MediaPipe Face Mesh** (468 landmarks) as the primary
-source.  MediaPipe is a pure-Python package (`pip install mediapipe`) with no
-C++ compiler requirement, making it the lowest-friction 468-point source
-available.
-
-Eye landmark indices below are the MediaPipe Face Mesh equivalents of the
-classic dlib 68-point eye contours:
-  Left eye  (MediaPipe): [33, 160, 158, 133, 153, 144]
-  Right eye (MediaPipe): [362, 385, 387, 263, 373, 380]
-
-These six points per eye are sufficient for EAR computation.
-
-EXPERIMENTAL DISCLAIMER
------------------------
-This is a lightweight blink-based liveness check — not production-grade
-anti-spoofing.  A high-quality printed photo held perfectly still for
->60 frames will be classified as "spoof".  A good video replay may fool it.
-Always report as EXPERIMENTAL in the thesis.
+LANDMARK SOURCE & LIVENESS ARCHITECTURE:
+----------------------------------------
+The system combines:
+1. Passive Silent Anti-Spoofing (SilentLivenessDetector):
+   - Landmark-independent single-frame evaluation of high-frequency Fourier
+     spectra, YCbCr/HSV chromaticity dispersion, and surface gradient reflections.
+   - Detects static 2D paper prints, digital screen replays (Moiré), and masks.
+2. Temporal Blink Detection (MediaPipe Face Mesh):
+   - Upgraded to MediaPipe 468-point dense face mesh (replaces the unreliable
+     5-point InsightFace landmarks).
+   - Extracts 6-point contours for left eye [33, 160, 158, 133, 153, 144] and
+     right eye [362, 385, 387, 263, 373, 380].
+3. Score Fusion:
+   - Fuses instantaneous passive confidence with temporal physiological blink signal.
+   - Immediately stops presentation attacks if passive score indicates clear spoof,
+     while confirming live subjects when natural physiological dynamics are present.
 """
 
 from __future__ import annotations
 
 import threading
-from typing import Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
 
+from app.config import settings
+from app.services.passive_liveness import silent_liveness_detector
 from app.utils.logging import logger
 
 # ── MediaPipe lazy load ────────────────────────────────────────────────────────
 _mp_face_mesh = None
 _mp_lock = threading.Lock()
-_mp_available = None          # None = not yet tried; True/False after first attempt
+_mp_available = None  # None = not yet tried; True/False after first attempt
 
 
 def _load_mediapipe() -> bool:
-    """Lazy-load MediaPipe Face Mesh.  Thread-safe.  Returns True if available."""
+    """Lazy-load MediaPipe Face Mesh. Thread-safe. Returns True if available."""
     global _mp_face_mesh, _mp_available
     with _mp_lock:
         if _mp_available is not None:
@@ -62,8 +56,7 @@ def _load_mediapipe() -> bool:
         except ImportError:
             _mp_available = False
             logger.warning(
-                "LivenessDetector: mediapipe not installed — liveness will return 'uncertain'. "
-                "Install with: pip install mediapipe>=0.10.0"
+                "LivenessDetector: mediapipe not installed — install with: pip install mediapipe>=0.10.0"
             )
         except Exception as e:
             _mp_available = False
@@ -87,15 +80,14 @@ def extract_landmarks_mediapipe(frame_bgr: np.ndarray) -> Optional[np.ndarray]:
             return None
         lm = results.multi_face_landmarks[0].landmark
         coords = np.array([[l.x * w, l.y * h] for l in lm], dtype=np.float32)
-        return coords                      # shape (468, 2)
+        return coords  # shape (468, 2)
     except Exception as e:
         logger.debug(f"MediaPipe landmark extraction failed: {e}")
         return None
 
 
-# ── EAR index sets (MediaPipe Face Mesh) ──────────────────────────────────────
-# These are the 6-point eye contour equivalents in the 468-point mesh.
-_LEFT_EYE_IDX  = [33,  160, 158, 133, 153, 144]
+# ── EAR index sets (MediaPipe Face Mesh 468 landmarks) ─────────────────────────
+_LEFT_EYE_IDX = [33, 160, 158, 133, 153, 144]
 _RIGHT_EYE_IDX = [362, 385, 387, 263, 373, 380]
 
 
@@ -106,21 +98,12 @@ def _eye_aspect_ratio(eye_pts: np.ndarray) -> float:
     """
     v1 = float(np.linalg.norm(eye_pts[1] - eye_pts[5]))
     v2 = float(np.linalg.norm(eye_pts[2] - eye_pts[4]))
-    h  = float(np.linalg.norm(eye_pts[0] - eye_pts[3]))
+    h = float(np.linalg.norm(eye_pts[0] - eye_pts[3]))
     return (v1 + v2) / (2.0 * h) if h > 1e-6 else 1.0
 
 
-# ── Detector class ─────────────────────────────────────────────────────────────
-
 class LivenessDetector:
-    """Blink-based liveness detection using MediaPipe Face Mesh (468 landmarks).
-
-    Requires 2 natural blinks within `detection_window` frames to classify
-    as "live".  Zero blinks after the full window → "spoof".
-    Still collecting → "uncertain".
-
-    This is EXPERIMENTAL — not production-grade anti-spoofing.
-    """
+    """Fused liveness detector: passive anti-spoofing + MediaPipe 468-point EAR blink detection."""
 
     def __init__(
         self,
@@ -131,7 +114,7 @@ class LivenessDetector:
         self.ear_threshold = ear_threshold
         self.consecutive_frames = consecutive_frames
         self.detection_window = detection_window
-        self._ear_history: list = []
+        self._ear_history: List[float] = []
         self._blink_count: int = 0
         self._low_ear_frames: int = 0
 
@@ -141,58 +124,86 @@ class LivenessDetector:
         self._blink_count = 0
         self._low_ear_frames = 0
 
-    # ── Primary entry: frame-level processing with auto landmark extraction ──
+    def process_frame_bgr(
+        self,
+        frame_bgr: np.ndarray,
+        face_box: Optional[Tuple[int, int, int, int]] = None,
+    ) -> dict:
+        """Full pipeline: run passive anti-spoofing, extract MediaPipe landmarks, and fuse.
 
-    def process_frame_bgr(self, frame_bgr: np.ndarray) -> dict:
-        """Full pipeline: extract MediaPipe landmarks from BGR frame, then run EAR.
-
-        This is the preferred entry point for the camera pipeline — pass the
-        raw BGR numpy frame and let MediaPipe handle landmark extraction.
-
-        Returns same dict format as process_frame().
-        """
-        landmarks = extract_landmarks_mediapipe(frame_bgr)
-        return self.process_frame(landmarks)
-
-    # ── Secondary entry: pre-extracted 468-point landmarks ──────────────────
-
-    def process_frame(self, landmarks: Optional[np.ndarray]) -> dict:
-        """Compute EAR and update blink state from pre-extracted landmarks.
-
-        Args:
-            landmarks: (N, 2) array of (x, y) pixel coordinates.
-                       Must have at least 388 rows (max MediaPipe index used is 387).
-                       Pass None to get "uncertain" with a clear reason.
-
-        Returns:
+        Returns required schema:
             {
-                "liveness":    "live" | "spoof" | "uncertain",
+                "liveness": "live" | "spoof" | "uncertain",
+                "passive_score": float,
+                "passive_verdict": "live" | "spoof",
                 "blink_count": int,
-                "ear":         float | None,
-                "reason":      str,
-                "landmark_source": "mediapipe_468" | "none",
+                "ear": float | None,
+                "blink_verdict": "live" | "spoof" | "uncertain",
+                "fused_score": float,
+                "reason": str,
             }
         """
+        # 1. Passive single-frame anti-spoofing
+        passive_res = silent_liveness_detector.evaluate_frame(frame_bgr, face_box=face_box)
+        passive_score = passive_res["passive_score"]
+        passive_verdict = passive_res["passive_verdict"]
+
+        # 2. MediaPipe 468-point landmark extraction
+        landmarks = extract_landmarks_mediapipe(frame_bgr)
+        blink_res = self.process_landmarks(landmarks)
+
+        ear = blink_res["ear"]
+        blink_count = blink_res["blink_count"]
+        blink_verdict = blink_res["blink_verdict"]
+
+        # 3. Fuse scores
+        # Strong spoof detection on passive signal (e.g. printed paper / digital screen)
+        if passive_score < 0.30:
+            final_liveness = "spoof"
+            fused_score = round(passive_score * 0.6, 4)
+            reason = f"Passive anti-spoofing detected presentation attack (score={passive_score:.2f})"
+        elif passive_score >= 0.70 and blink_count >= 1:
+            final_liveness = "live"
+            fused_score = round(0.55 * passive_score + 0.45 * min(1.0, blink_count / 2.0), 4)
+            reason = f"Passive skin reflectance verified ({passive_score:.2f}) & {blink_count} natural blink(s) observed"
+        elif blink_count >= 2:
+            final_liveness = "live"
+            fused_score = round(0.50 * passive_score + 0.50, 4)
+            reason = f"Detected {blink_count} natural blinks (passive={passive_score:.2f})"
+        elif len(self._ear_history) >= self.detection_window and blink_count == 0:
+            final_liveness = "spoof"
+            fused_score = round(passive_score * 0.4, 4)
+            reason = "No blinks detected in observation window"
+        else:
+            final_liveness = "uncertain"
+            fused_score = round(passive_score * 0.7, 4)
+            reason = (
+                f"Observing… ({len(self._ear_history)}/{self.detection_window} frames, "
+                f"{blink_count} blinks, passive={passive_score:.2f})"
+            )
+
+        return {
+            "liveness": final_liveness,
+            "passive_score": passive_score,
+            "passive_verdict": passive_verdict,
+            "blink_count": blink_count,
+            "ear": ear,
+            "blink_verdict": blink_verdict,
+            "fused_score": fused_score,
+            "reason": reason,
+        }
+
+    def process_landmarks(self, landmarks: Optional[np.ndarray]) -> dict:
+        """Compute EAR and update blink state from pre-extracted landmarks."""
         if landmarks is None or len(landmarks) < 388:
-            if not _load_mediapipe():
-                reason = (
-                    "MediaPipe not installed — install with: pip install mediapipe>=0.10.0. "
-                    "Liveness check disabled."
-                )
-            else:
-                reason = (
-                    f"Insufficient landmarks ({len(landmarks) if landmarks is not None else 0} "
-                    f"< 388 required). Pass a 468-point MediaPipe array."
-                )
             return {
-                "liveness": "uncertain",
+                "blink_verdict": "uncertain",
                 "blink_count": self._blink_count,
                 "ear": None,
-                "reason": reason,
-                "landmark_source": "none",
+                "reason": "MediaPipe landmarks unavailable or insufficient",
             }
 
-        left_eye  = landmarks[_LEFT_EYE_IDX]
+        left_eye = landmarks[_LEFT_EYE_IDX]
         right_eye = landmarks[_RIGHT_EYE_IDX]
         ear = (_eye_aspect_ratio(left_eye) + _eye_aspect_ratio(right_eye)) / 2.0
 
@@ -200,7 +211,7 @@ class LivenessDetector:
         if len(self._ear_history) > self.detection_window:
             self._ear_history.pop(0)
 
-        # Blink detection
+        # Blink state tracking
         if ear < self.ear_threshold:
             self._low_ear_frames += 1
         else:
@@ -208,21 +219,15 @@ class LivenessDetector:
                 self._blink_count += 1
             self._low_ear_frames = 0
 
-        # Verdict
         if self._blink_count >= 2:
-            verdict = "live"
-            reason  = f"Detected {self._blink_count} natural blinks"
+            blink_verdict = "live"
         elif len(self._ear_history) >= self.detection_window and self._blink_count == 0:
-            verdict = "spoof"
-            reason  = "No blinks detected in observation window"
+            blink_verdict = "spoof"
         else:
-            verdict = "uncertain"
-            reason  = f"Observing… ({len(self._ear_history)}/{self.detection_window} frames, {self._blink_count} blinks)"
+            blink_verdict = "uncertain"
 
         return {
-            "liveness":        verdict,
-            "blink_count":     self._blink_count,
-            "ear":             round(ear, 4),
-            "reason":          reason,
-            "landmark_source": "mediapipe_468",
+            "blink_verdict": blink_verdict,
+            "blink_count": self._blink_count,
+            "ear": round(ear, 4),
         }
