@@ -26,13 +26,15 @@ import {
   GraduationCap,
   Cpu,
   ExternalLink,
-  Award
+  Award,
+  CalendarDays
 } from 'lucide-react'
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: null },
   { to: '/students', label: 'Students', icon: Users, roles: null },
   { to: '/sessions', label: 'Sessions', icon: Calendar, roles: null },
+  { to: '/timetable', label: 'Timetable', icon: CalendarDays, roles: null },
   { to: '/live', label: 'Live Classroom', icon: Video, roles: null },
   { to: '/classrooms', label: 'Classrooms', icon: School, roles: null },
   { to: '/students?tab=enrollment', label: 'Face Enrollment', icon: UserCheck, roles: null },

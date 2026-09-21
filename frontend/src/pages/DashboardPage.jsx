@@ -25,7 +25,8 @@ import {
   ChevronRight,
   TrendingUp,
   Award,
-  ExternalLink
+  ExternalLink,
+  CalendarDays
 } from 'lucide-react'
 
 const API = '/api'
@@ -631,6 +632,14 @@ export default function DashboardPage() {
               >
                 <School className="w-6 h-6 text-blue-600 mb-1.5 group-hover:scale-110 transition-transform" />
                 <span className="text-xs font-bold text-slate-800">Classrooms</span>
+              </Link>
+
+              <Link
+                to="/timetable"
+                className="p-3.5 rounded-2xl bg-slate-50 hover:bg-blue-50/80 border border-slate-200/80 hover:border-blue-200 flex flex-col items-center text-center group transition-all"
+              >
+                <CalendarDays className="w-6 h-6 text-blue-600 mb-1.5 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold text-slate-800">Timetable</span>
               </Link>
 
               <Link

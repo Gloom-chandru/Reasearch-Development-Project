@@ -16,6 +16,7 @@ import AnalyticsPage from './pages/AnalyticsPage'
 import LiveRecognitionPage from './pages/LiveRecognitionPage'
 import AuditLogPage from './pages/AuditLogPage'
 import MarksAnalyzerPage from './pages/MarksAnalyzerPage'
+import TimetablePage from './pages/TimetablePage'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -37,6 +38,7 @@ export default function App() {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/students" element={<StudentsPage />} />
                 <Route path="/sessions" element={<SessionsPage />} />
+                <Route path="/timetable" element={<TimetablePage />} />
                 <Route path="/classrooms" element={<ClassroomsPage />} />
                 <Route path="/notices" element={<NoticesPage />} />
                 <Route path="/users" element={<UsersPage />} />

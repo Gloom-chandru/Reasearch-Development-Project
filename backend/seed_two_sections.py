@@ -237,19 +237,29 @@ def main():
             cfg.recognition_threshold = 0.40
     db.commit()
 
-    # Ensure core subjects exist
-    subj_101 = db.query(Subject).filter_by(code="AIDS-101").first()
-    if not subj_101:
-        subj_101 = Subject(name="Python Programming", code="AIDS-101", department="AIDS", is_active=True)
-        db.add(subj_101)
-
-    subj_102 = db.query(Subject).filter_by(code="AIDS-102").first()
-    if not subj_102:
-        subj_102 = Subject(name="Mathematics for AI", code="AIDS-102", department="AIDS", is_active=True)
-        db.add(subj_102)
+    # Ensure all official timetable subjects exist
+    official_subjects = [
+        ("OME354", "Applied Design Thinking (ADT)", "AIDS"),
+        ("GE3751", "Principles Of Management (POM)", "AIDS"),
+        ("AI3021", "IT in Agricultural System (ITAS)", "AIDS"),
+        ("GE3791", "Human Values and Ethics (HVE)", "AIDS"),
+        ("SR", "Skill Rack (Coding Lab)", "AIDS"),
+        ("PL", "Placement Training", "AIDS"),
+        ("PROJECT", "Project Work Phase - I", "AIDS"),
+        ("SEMINAR", "Technical Seminar & Presentation", "AIDS"),
+    ]
+    subjects = []
+    for code, name, dept in official_subjects:
+        subj = db.query(Subject).filter_by(code=code).first()
+        if not subj:
+            subj = Subject(name=name, code=code, department=dept, is_active=True)
+            db.add(subj)
+        else:
+            subj.name = name
+            subj.department = dept
+            subj.is_active = True
+        subjects.append(subj)
     db.commit()
-
-    subjects = [subj_101, subj_102]
 
     print(f"2. Seeding Section A: {len(SECTION_A_STUDENTS)} students...")
     sec_a_student_objs = []
@@ -307,92 +317,124 @@ def main():
 
     db.commit()
 
-    # 4. Clean old sessions and seed fresh active & scheduled sessions
+    # 4. Clean old sessions and seed fresh active & scheduled sessions matching timetable
     db.query(AttendanceSession).delete()
     db.commit()
 
+    subj_map = {s.code: s for s in subjects}
     now = datetime.datetime.utcnow()
-    # Session 1: Section A active session
-    sess_a = AttendanceSession(
+
+    # Section A sessions:
+    # 1. Active: AI3021 (ITAS)
+    sess_a_active = AttendanceSession(
         classroom_id=cls_1a.id,
-        subject_id=subj_101.id,
+        subject_id=subj_map["AI3021"].id,
         faculty_id=admin_id,
-        title="Python Programming — Lab (Section A)",
+        title="AI3021: IT in Agricultural System (Section A)",
         scheduled_start=now - datetime.timedelta(minutes=20),
-        scheduled_end=now + datetime.timedelta(minutes=40),
+        scheduled_end=now + datetime.timedelta(minutes=30),
         late_start_offset=5,
         late_end_offset=15,
         status=SessionStatus.ACTIVE,
     )
-    db.add(sess_a)
+    db.add(sess_a_active)
 
-    # Session 2: Section B scheduled session
-    sess_b = AttendanceSession(
-        classroom_id=cls_1b.id,
-        subject_id=subj_101.id,
+    # 2. Scheduled: OME354 (ADT)
+    sess_a_sched = AttendanceSession(
+        classroom_id=cls_1a.id,
+        subject_id=subj_map["OME354"].id,
         faculty_id=admin_id,
-        title="Python Programming — Lab (Section B)",
-        scheduled_start=now + datetime.timedelta(hours=1),
-        scheduled_end=now + datetime.timedelta(hours=2),
+        title="OME354: Applied Design Thinking (Section A)",
+        scheduled_start=now + datetime.timedelta(minutes=45),
+        scheduled_end=now + datetime.timedelta(minutes=95),
         late_start_offset=5,
         late_end_offset=15,
         status=SessionStatus.SCHEDULED,
     )
-    db.add(sess_b)
+    db.add(sess_a_sched)
 
-    # Session 3: Completed morning session for Section A with sample records
-    sess_prev_a = AttendanceSession(
+    # 3. Completed morning: GE3751 (POM)
+    sess_a_comp = AttendanceSession(
         classroom_id=cls_1a.id,
-        subject_id=subj_102.id,
+        subject_id=subj_map["GE3751"].id,
         faculty_id=admin_id,
-        title="Mathematics for AI — Lecture (Section A)",
+        title="GE3751: Principles Of Management (Section A)",
         scheduled_start=now - datetime.timedelta(hours=3),
         scheduled_end=now - datetime.timedelta(hours=2),
         late_start_offset=5,
         late_end_offset=15,
         status=SessionStatus.COMPLETED,
     )
-    db.add(sess_prev_a)
+    db.add(sess_a_comp)
 
-    # Session 4: Completed morning session for Section B with sample records
-    sess_prev_b = AttendanceSession(
+    # Section B sessions (shuffled):
+    # 4. Active: GE3751 (POM)
+    sess_b_active = AttendanceSession(
         classroom_id=cls_1b.id,
-        subject_id=subj_102.id,
+        subject_id=subj_map["GE3751"].id,
         faculty_id=admin_id,
-        title="Mathematics for AI — Lecture (Section B)",
+        title="GE3751: Principles Of Management (Section B)",
+        scheduled_start=now - datetime.timedelta(minutes=20),
+        scheduled_end=now + datetime.timedelta(minutes=30),
+        late_start_offset=5,
+        late_end_offset=15,
+        status=SessionStatus.ACTIVE,
+    )
+    db.add(sess_b_active)
+
+    # 5. Scheduled: AI3021 (ITAS)
+    sess_b_sched = AttendanceSession(
+        classroom_id=cls_1b.id,
+        subject_id=subj_map["AI3021"].id,
+        faculty_id=admin_id,
+        title="AI3021: IT in Agricultural System (Section B)",
+        scheduled_start=now + datetime.timedelta(minutes=45),
+        scheduled_end=now + datetime.timedelta(minutes=95),
+        late_start_offset=5,
+        late_end_offset=15,
+        status=SessionStatus.SCHEDULED,
+    )
+    db.add(sess_b_sched)
+
+    # 6. Completed morning: OME354 (ADT)
+    sess_b_comp = AttendanceSession(
+        classroom_id=cls_1b.id,
+        subject_id=subj_map["OME354"].id,
+        faculty_id=admin_id,
+        title="OME354: Applied Design Thinking (Section B)",
         scheduled_start=now - datetime.timedelta(hours=3),
         scheduled_end=now - datetime.timedelta(hours=2),
         late_start_offset=5,
         late_end_offset=15,
         status=SessionStatus.COMPLETED,
     )
-    db.add(sess_prev_b)
+    db.add(sess_b_comp)
     db.flush()
 
     # Seed sample attendance for the completed sessions
-    # Section A: 52 present, 8 absent
+    # Section A: 55 present, 5 absent
     for idx, s in enumerate(sec_a_student_objs):
-        st = AttendanceStatus.PRESENT if idx < 52 else AttendanceStatus.ABSENT_UNMARKED
+        st = AttendanceStatus.PRESENT if idx < 55 else AttendanceStatus.ABSENT_UNMARKED
         rec = AttendanceRecord(
             student_id=s.id,
-            session_id=sess_prev_a.id,
+            session_id=sess_a_comp.id,
             status=st,
             recognition_decision=RecognitionDecision.MATCH if st == AttendanceStatus.PRESENT else RecognitionDecision.NOT_RECOGNIZED,
-            similarity_score=0.88 if st == AttendanceStatus.PRESENT else None,
-            captured_at=sess_prev_a.scheduled_start + datetime.timedelta(minutes=idx % 10 + 2),
+            similarity_score=0.89 if st == AttendanceStatus.PRESENT else None,
+            captured_at=sess_a_comp.scheduled_start + datetime.timedelta(minutes=idx % 10 + 2),
         )
         db.add(rec)
 
-    # Section B: 54 present, 6 absent
+    # Section B: 53 present, 7 absent
     for idx, s in enumerate(sec_b_student_objs):
-        st = AttendanceStatus.PRESENT if idx < 54 else AttendanceStatus.ABSENT_UNMARKED
+        st = AttendanceStatus.PRESENT if idx < 53 else AttendanceStatus.ABSENT_UNMARKED
         rec = AttendanceRecord(
             student_id=s.id,
-            session_id=sess_prev_b.id,
+            session_id=sess_b_comp.id,
             status=st,
             recognition_decision=RecognitionDecision.MATCH if st == AttendanceStatus.PRESENT else RecognitionDecision.NOT_RECOGNIZED,
-            similarity_score=0.91 if st == AttendanceStatus.PRESENT else None,
-            captured_at=sess_prev_b.scheduled_start + datetime.timedelta(minutes=idx % 10 + 2),
+            similarity_score=0.92 if st == AttendanceStatus.PRESENT else None,
+            captured_at=sess_b_comp.scheduled_start + datetime.timedelta(minutes=idx % 10 + 2),
         )
         db.add(rec)
 

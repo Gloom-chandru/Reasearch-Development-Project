@@ -44,64 +44,64 @@ const WEEK_1_DATES = [
   { day: 'Sun', date: 'Sep 14', fullDate: 'Sep 14, 2026', dayFull: 'Sunday', isoDate: '2026-09-14' }
 ]
 
-// Section A Data
+// Section A Data (Year IV / Semester VII Timetable)
 const SECTION_A_CONFIG = {
   sectionId: 'A',
   title: 'Section A',
   classroomCode: 'AIDS-1A',
-  className: 'AI&DS Year 1 — Section A',
+  className: 'AI&DS Year IV (Sem VII) — Section A',
   totalStudents: 60,
   accentColor: 'blue',
   lastUpdated: '10:32 AM',
   weeks: {
     week2: [
-      { ...WEEK_2_DATES[0], present: 48, absent: 12, total: 60, rateChange: '+4%', subject: 'Python Programming — Lab', timeSlot: '09:00 - 11:00 AM' },
-      { ...WEEK_2_DATES[1], present: 50, absent: 10, total: 60, rateChange: '+3%', subject: 'Mathematics for AI', timeSlot: '10:00 - 11:30 AM' },
-      { ...WEEK_2_DATES[2], present: 45, absent: 15, total: 60, rateChange: '-8%', subject: 'Data Structures & Algorithms', timeSlot: '09:00 - 10:30 AM' },
-      { ...WEEK_2_DATES[3], present: 52, absent: 8, total: 60, rateChange: '+12%', subject: 'AIoT Sensor Systems', timeSlot: '02:00 - 04:00 PM' },
-      { ...WEEK_2_DATES[4], present: 46, absent: 14, total: 60, rateChange: '-10%', subject: 'Python Programming — Lab', timeSlot: '09:00 - 11:00 AM' },
-      { ...WEEK_2_DATES[5], present: 55, absent: 5, total: 60, rateChange: '+15%', subject: 'Machine Learning Workshop', timeSlot: '09:30 - 12:30 PM' },
-      { ...WEEK_2_DATES[6], present: 53, absent: 7, total: 60, rateChange: '+5%', subject: 'AI Project Evaluation', timeSlot: '10:00 - 12:00 PM' }
+      { ...WEEK_2_DATES[0], present: 54, absent: 6, total: 60, rateChange: '+4%', subject: 'AI3021: IT in Agricultural System (ITAS)', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_2_DATES[1], present: 56, absent: 4, total: 60, rateChange: '+3%', subject: 'GE3751: Principles Of Management (POM)', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_2_DATES[2], present: 52, absent: 8, total: 60, rateChange: '-4%', subject: 'OME354: Applied Design Thinking (ADT)', timeSlot: '09:20 - 11:15 AM' },
+      { ...WEEK_2_DATES[3], present: 55, absent: 5, total: 60, rateChange: '+6%', subject: 'GE3791: Human Values & Ethics (HVE)', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_2_DATES[4], present: 53, absent: 7, total: 60, rateChange: '+2%', subject: 'PSS: Placement Soft Skill Training', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_2_DATES[5], present: 57, absent: 3, total: 60, rateChange: '+8%', subject: 'PAT: Placement Aptitude & Technical', timeSlot: '08:30 - 10:10 AM' },
+      { ...WEEK_2_DATES[6], present: 55, absent: 5, total: 60, rateChange: '+5%', subject: 'Capstone Project Evaluation & Viva', timeSlot: '10:00 - 12:00 PM' }
     ],
     week1: [
-      { ...WEEK_1_DATES[0], present: 47, absent: 13, total: 60, rateChange: '+2%', subject: 'Python Programming — Lab', timeSlot: '09:00 - 11:00 AM' },
-      { ...WEEK_1_DATES[1], present: 49, absent: 11, total: 60, rateChange: '+3%', subject: 'Mathematics for AI', timeSlot: '10:00 - 11:30 AM' },
-      { ...WEEK_1_DATES[2], present: 44, absent: 16, total: 60, rateChange: '-8%', subject: 'Data Structures & Algorithms', timeSlot: '09:00 - 10:30 AM' },
-      { ...WEEK_1_DATES[3], present: 51, absent: 9, total: 60, rateChange: '+11%', subject: 'AIoT Sensor Systems', timeSlot: '02:00 - 04:00 PM' },
-      { ...WEEK_1_DATES[4], present: 47, absent: 13, total: 60, rateChange: '-6%', subject: 'Python Programming — Lab', timeSlot: '09:00 - 11:00 AM' },
-      { ...WEEK_1_DATES[5], present: 53, absent: 7, total: 60, rateChange: '+10%', subject: 'AI Ethics & Standards', timeSlot: '09:30 - 12:00 PM' },
-      { ...WEEK_1_DATES[6], present: 50, absent: 10, total: 60, rateChange: '-5%', subject: 'Review & Quiz', timeSlot: '10:00 - 11:30 AM' }
+      { ...WEEK_1_DATES[0], present: 52, absent: 8, total: 60, rateChange: '+2%', subject: 'AI3021: IT in Agricultural System (ITAS)', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_1_DATES[1], present: 54, absent: 6, total: 60, rateChange: '+3%', subject: 'GE3751: Principles Of Management (POM)', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_1_DATES[2], present: 50, absent: 10, total: 60, rateChange: '-5%', subject: 'OME354: Applied Design Thinking (ADT)', timeSlot: '09:20 - 11:15 AM' },
+      { ...WEEK_1_DATES[3], present: 53, absent: 7, total: 60, rateChange: '+4%', subject: 'GE3791: Human Values & Ethics (HVE)', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_1_DATES[4], present: 51, absent: 9, total: 60, rateChange: '+1%', subject: 'PSS: Placement Soft Skill Training', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_1_DATES[5], present: 55, absent: 5, total: 60, rateChange: '+6%', subject: 'PAT: Placement Aptitude & Technical', timeSlot: '08:30 - 10:10 AM' },
+      { ...WEEK_1_DATES[6], present: 52, absent: 8, total: 60, rateChange: '-2%', subject: 'Capstone Project Evaluation & Viva', timeSlot: '10:00 - 12:00 PM' }
     ]
   }
 }
 
-// Section B Data
+// Section B Data (Shuffled Timetable)
 const SECTION_B_CONFIG = {
   sectionId: 'B',
   title: 'Section B',
   classroomCode: 'AIDS-1B',
-  className: 'AI&DS Year 1 — Section B',
+  className: 'AI&DS Year IV (Sem VII) — Section B (Shuffled)',
   totalStudents: 60,
   accentColor: 'purple',
   lastUpdated: '10:32 AM',
   weeks: {
     week2: [
-      { ...WEEK_2_DATES[0], present: 51, absent: 9, total: 60, rateChange: '+2%', subject: 'Python Programming — Lab', timeSlot: '11:15 - 01:15 PM' },
-      { ...WEEK_2_DATES[1], present: 53, absent: 7, total: 60, rateChange: '+3%', subject: 'Mathematics for AI', timeSlot: '01:30 - 03:00 PM' },
-      { ...WEEK_2_DATES[2], present: 49, absent: 11, total: 60, rateChange: '-6%', subject: 'Data Structures & Algorithms', timeSlot: '11:00 - 12:30 PM' },
-      { ...WEEK_2_DATES[3], present: 54, absent: 6, total: 60, rateChange: '+8%', subject: 'AIoT Sensor Systems', timeSlot: '10:00 - 12:00 PM' },
-      { ...WEEK_2_DATES[4], present: 50, absent: 10, total: 60, rateChange: '-6%', subject: 'Python Programming — Lab', timeSlot: '11:15 - 01:15 PM' },
-      { ...WEEK_2_DATES[5], present: 56, absent: 4, total: 60, rateChange: '+10%', subject: 'Machine Learning Workshop', timeSlot: '01:30 - 04:30 PM' },
-      { ...WEEK_2_DATES[6], present: 52, absent: 8, total: 60, rateChange: '+3%', subject: 'AI Project Evaluation', timeSlot: '02:00 - 04:00 PM' }
+      { ...WEEK_2_DATES[0], present: 55, absent: 5, total: 60, rateChange: '+3%', subject: 'GE3751: Principles Of Management (POM)', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_2_DATES[1], present: 57, absent: 3, total: 60, rateChange: '+5%', subject: 'AI3021: IT in Agricultural System (ITAS)', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_2_DATES[2], present: 53, absent: 7, total: 60, rateChange: '-2%', subject: 'OME354: Applied Design Thinking (ADT)', timeSlot: '08:30 - 10:10 AM' },
+      { ...WEEK_2_DATES[3], present: 56, absent: 4, total: 60, rateChange: '+7%', subject: 'GE3791: Human Values & Ethics (HVE)', timeSlot: '09:20 - 10:10 AM' },
+      { ...WEEK_2_DATES[4], present: 54, absent: 6, total: 60, rateChange: '+4%', subject: 'SR: Skill Rack Problem Solving', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_2_DATES[5], present: 58, absent: 2, total: 60, rateChange: '+10%', subject: 'PL: Placement Mock Interview & Prep', timeSlot: '08:30 - 10:10 AM' },
+      { ...WEEK_2_DATES[6], present: 54, absent: 6, total: 60, rateChange: '+2%', subject: 'Capstone Project Review & Viva', timeSlot: '01:30 - 03:30 PM' }
     ],
     week1: [
-      { ...WEEK_1_DATES[0], present: 50, absent: 10, total: 60, rateChange: '+1%', subject: 'Python Programming — Lab', timeSlot: '11:15 - 01:15 PM' },
-      { ...WEEK_1_DATES[1], present: 52, absent: 8, total: 60, rateChange: '+3%', subject: 'Mathematics for AI', timeSlot: '01:30 - 03:00 PM' },
-      { ...WEEK_1_DATES[2], present: 48, absent: 12, total: 60, rateChange: '-6%', subject: 'Data Structures & Algorithms', timeSlot: '11:00 - 12:30 PM' },
-      { ...WEEK_1_DATES[3], present: 53, absent: 7, total: 60, rateChange: '+8%', subject: 'AIoT Sensor Systems', timeSlot: '10:00 - 12:00 PM' },
-      { ...WEEK_1_DATES[4], present: 49, absent: 11, total: 60, rateChange: '-6%', subject: 'Python Programming — Lab', timeSlot: '11:15 - 01:15 PM' },
-      { ...WEEK_1_DATES[5], present: 54, absent: 6, total: 60, rateChange: '+8%', subject: 'AI Ethics & Standards', timeSlot: '01:00 - 03:30 PM' },
-      { ...WEEK_1_DATES[6], present: 51, absent: 9, total: 60, rateChange: '-5%', subject: 'Review & Quiz', timeSlot: '02:00 - 03:30 PM' }
+      { ...WEEK_1_DATES[0], present: 53, absent: 7, total: 60, rateChange: '+2%', subject: 'GE3751: Principles Of Management (POM)', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_1_DATES[1], present: 55, absent: 5, total: 60, rateChange: '+4%', subject: 'AI3021: IT in Agricultural System (ITAS)', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_1_DATES[2], present: 51, absent: 9, total: 60, rateChange: '-3%', subject: 'OME354: Applied Design Thinking (ADT)', timeSlot: '08:30 - 10:10 AM' },
+      { ...WEEK_1_DATES[3], present: 54, absent: 6, total: 60, rateChange: '+5%', subject: 'GE3791: Human Values & Ethics (HVE)', timeSlot: '09:20 - 10:10 AM' },
+      { ...WEEK_1_DATES[4], present: 52, absent: 8, total: 60, rateChange: '+2%', subject: 'SR: Skill Rack Problem Solving', timeSlot: '08:30 - 09:20 AM' },
+      { ...WEEK_1_DATES[5], present: 56, absent: 4, total: 60, rateChange: '+8%', subject: 'PL: Placement Mock Interview & Prep', timeSlot: '08:30 - 10:10 AM' },
+      { ...WEEK_1_DATES[6], present: 53, absent: 7, total: 60, rateChange: '-1%', subject: 'Capstone Project Review & Viva', timeSlot: '01:30 - 03:30 PM' }
     ]
   }
 }
