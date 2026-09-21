@@ -688,13 +688,21 @@ export default function StudentsPage() {
 
             {/* Profile Avatar & Header Summary */}
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 font-black text-xl flex items-center justify-center shrink-0 shadow-xs border border-blue-200">
-                {selectedStudent.full_name
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')
-                  .substring(0, 2)}
-              </div>
+              {studentPhotos[selectedStudent.id] ? (
+                <img
+                  src={studentPhotos[selectedStudent.id]}
+                  alt={selectedStudent.full_name}
+                  className="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-xs border border-blue-200"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 font-black text-xl flex items-center justify-center shrink-0 shadow-xs border border-blue-200">
+                  {selectedStudent.full_name
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .substring(0, 2)}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <h4 className="font-extrabold text-slate-900 text-base truncate">
@@ -719,9 +727,9 @@ export default function StudentsPage() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-2 px-3 border-b-2 transition-all ${
+                  className={`py-2 px-3 border-b-2 transition-all cursor-pointer ${
                     activeTab === tab
-                      ? 'border-blue-600 text-blue-600'
+                      ? 'border-blue-600 text-blue-600 font-bold'
                       : 'border-transparent text-slate-400 hover:text-slate-700'
                   }`}
                 >
@@ -730,104 +738,348 @@ export default function StudentsPage() {
               ))}
             </div>
 
-            {/* Details Grid (Left) & Quick Actions / Photo (Right) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              {/* Left Column: Full Details */}
-              <div className="space-y-3 text-xs">
-                <div>
-                  <p className="text-[11px] font-semibold text-slate-400">Register Number</p>
-                  <p className="font-mono font-bold text-slate-800">
-                    {selectedStudent.register_number}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-slate-400">Full Name</p>
-                  <p className="font-bold text-slate-900">{selectedStudent.full_name}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-slate-400">Department</p>
-                  <p className="font-bold text-slate-800">
-                    Artificial Intelligence & Data Science
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-slate-400">Section</p>
-                  <p className="font-bold text-blue-600">{selectedStudent.section}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-slate-400">Email</p>
-                  <p className="font-semibold text-slate-700">{selectedStudent.email}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-slate-400">Phone</p>
-                  <p className="font-semibold text-slate-700">{selectedStudent.phone}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-slate-400">Enrollment Status</p>
-                  <span className="inline-flex items-center gap-1 font-bold text-rose-600 mt-0.5">
-                    <span className="w-2 h-2 rounded-full bg-rose-500" />
-                    Not Enrolled
-                  </span>
-                </div>
-                <div>
-                  <div className="flex justify-between text-[11px] font-bold text-slate-600 mb-1">
-                    <span>Face Samples</span>
-                    <span>{selectedStudent.enrollment_count} / 5</span>
+            {/* TAB 1: OVERVIEW */}
+            {activeTab === 'Overview' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                {/* Left Column: Full Details */}
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-400">Register Number</p>
+                    <p className="font-mono font-bold text-slate-800">
+                      {selectedStudent.register_number}
+                    </p>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2">
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-400">Full Name</p>
+                    <p className="font-bold text-slate-900">{selectedStudent.full_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-400">Department</p>
+                    <p className="font-bold text-slate-800">
+                      Artificial Intelligence & Data Science
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-400">Section</p>
+                    <p className="font-bold text-blue-600">{selectedStudent.section}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-400">Email</p>
+                    <p className="font-semibold text-slate-700">{selectedStudent.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-400">Phone</p>
+                    <p className="font-semibold text-slate-700">{selectedStudent.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-400">Enrollment Status</p>
+                    {selectedStudent.enrollment_count >= MIN_SAMPLES ? (
+                      <span className="inline-flex items-center gap-1 font-bold text-emerald-600 mt-0.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        Enrolled
+                      </span>
+                    ) : selectedStudent.enrollment_count > 0 ? (
+                      <span className="inline-flex items-center gap-1 font-bold text-amber-600 mt-0.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        Partially Enrolled
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 font-bold text-rose-600 mt-0.5">
+                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        Not Enrolled
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold text-slate-600 mb-1">
+                      <span>Face Samples</span>
+                      <span>{selectedStudent.enrollment_count} / {MIN_SAMPLES}</span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(100, (selectedStudent.enrollment_count / MIN_SAMPLES) * 100)}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Photo & Quick Actions */}
+                <div className="space-y-4">
+                  {/* Photo Block */}
+                  <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 flex flex-col items-center justify-center text-center">
+                    <p className="text-xs font-bold text-slate-700 mb-2">Student Photo</p>
+                    <div className="w-20 h-20 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center mb-2 overflow-hidden border border-slate-300">
+                      {studentPhotos[selectedStudent.id] ? (
+                        <img
+                          src={studentPhotos[selectedStudent.id]}
+                          alt={selectedStudent.full_name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-10 h-10" />
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      ref={photoInputRef}
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => photoInputRef.current?.click()}
+                      className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-100 flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload Photo</span>
+                    </button>
+                  </div>
+
+                  {/* Quick Actions List */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-slate-800">Quick Actions</p>
+                    <button
+                      type="button"
+                      onClick={() => setTargetStudent(selectedStudent)}
+                      className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Enroll Face</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('Attendance')}
+                      className="w-full py-2 px-3 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 hover:border-blue-200 border border-transparent rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                      <span>View Attendance</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('Academic')}
+                      className="w-full py-2 px-3 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 hover:border-blue-200 border border-transparent rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>View Academic Details</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openNoticeModal(selectedStudent)}
+                      className="w-full py-2 px-3 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 hover:border-blue-200 border border-transparent rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Send Notice</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(selectedStudent)}
+                      className="w-full py-2 px-3 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 hover:border-blue-200 border border-transparent rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Edit Student</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: FACE ENROLLMENT */}
+            {activeTab === 'Face Enrollment' && (
+              <div className="space-y-4 pt-2 text-xs">
+                <div className="p-4 bg-blue-50/70 border border-blue-100 rounded-2xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-slate-800">Biometric State</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      selectedStudent.enrollment_count >= MIN_SAMPLES
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        : selectedStudent.enrollment_count > 0
+                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                        : 'bg-rose-100 text-rose-800 border border-rose-200'
+                    }`}>
+                      {selectedStudent.enrollment_count >= MIN_SAMPLES ? 'Fully Enrolled' : selectedStudent.enrollment_count > 0 ? 'Partially Enrolled' : 'Not Enrolled'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[11px] font-semibold text-slate-600 mb-1">
+                    <span>Face Vector Samples</span>
+                    <span>{selectedStudent.enrollment_count} / {MIN_SAMPLES} captured</span>
+                  </div>
+                  <div className="w-full bg-blue-200/60 rounded-full h-2">
                     <div
                       className="bg-blue-600 h-2 rounded-full transition-all"
-                      style={{
-                        width: `${(selectedStudent.enrollment_count / 5) * 100}%`
-                      }}
+                      style={{ width: `${Math.min(100, (selectedStudent.enrollment_count / MIN_SAMPLES) * 100)}%` }}
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Right Column: Photo & Quick Actions */}
-              <div className="space-y-4">
-                {/* Photo Block */}
-                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 flex flex-col items-center justify-center text-center">
-                  <p className="text-xs font-bold text-slate-700 mb-2">Student Photo</p>
-                  <div className="w-20 h-20 rounded-full bg-slate-200 text-slate-400 flex items-center justify-center mb-2">
-                    <User className="w-10 h-10" />
+                <div className="space-y-2">
+                  <h5 className="font-bold text-slate-800">Biometric Vector Information</h5>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <p className="text-slate-400 font-semibold">Model Pipeline</p>
+                      <p className="font-bold text-slate-800">InsightFace Buffalo_l</p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <p className="text-slate-400 font-semibold">Embedding Size</p>
+                      <p className="font-bold text-slate-800">512-d Float Vector</p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <p className="text-slate-400 font-semibold">Liveness Check</p>
+                      <p className="font-bold text-emerald-600">Active (Passive Mesh)</p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <p className="text-slate-400 font-semibold">Match Threshold</p>
+                      <p className="font-bold text-slate-800">Cosine &ge; 0.40</p>
+                    </div>
                   </div>
-                  <button className="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-100 flex items-center gap-1.5">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Photo</span>
-                  </button>
                 </div>
 
-                {/* Quick Actions List */}
-                <div className="space-y-2">
-                  <p className="text-xs font-bold text-slate-800">Quick Actions</p>
+                <div className="pt-2">
                   <button
+                    type="button"
                     onClick={() => setTargetStudent(selectedStudent)}
-                    className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs"
+                    className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
                   >
                     <Camera className="w-4 h-4" />
-                    <span>Enroll Face</span>
-                  </button>
-                  <button className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>View Attendance</span>
-                  </button>
-                  <button className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>View Academic Details</span>
-                  </button>
-                  <button className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Send Notice</span>
-                  </button>
-                  <button className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>Edit Student</span>
+                    <span>Launch Webcam Face Capture</span>
                   </button>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* TAB 3: ATTENDANCE */}
+            {activeTab === 'Attendance' && (
+              <div className="space-y-4 pt-2 text-xs">
+                {/* Attendance Metric Card */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                    <p className="text-[10px] font-bold text-emerald-700">Attendance Rate</p>
+                    <p className="text-xl font-extrabold text-emerald-800 mt-0.5">88%</p>
+                    <span className="text-[9px] font-semibold text-emerald-600">Eligible</span>
+                  </div>
+                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-2xl">
+                    <p className="text-[10px] font-bold text-blue-700">Present Sessions</p>
+                    <p className="text-xl font-extrabold text-blue-800 mt-0.5">22</p>
+                    <span className="text-[9px] font-semibold text-blue-600">On-time</span>
+                  </div>
+                  <div className="p-3 bg-rose-50 border border-rose-100 rounded-2xl">
+                    <p className="text-[10px] font-bold text-rose-700">Absent / Late</p>
+                    <p className="text-xl font-extrabold text-rose-800 mt-0.5">3 / 2</p>
+                    <span className="text-[9px] font-semibold text-rose-600">Excused: 1</span>
+                  </div>
+                </div>
+
+                {/* Session Records */}
+                <div className="space-y-2">
+                  <h5 className="font-bold text-slate-800 flex items-center justify-between">
+                    <span>Recent Sessions Attendance</span>
+                    <span className="text-[10px] font-medium text-slate-400">Section {selectedStudent.section}</span>
+                  </h5>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    {[
+                      { subject: 'AI-301 Deep Learning', time: 'Today, 09:30 AM', status: 'Present', color: 'bg-emerald-100 text-emerald-700' },
+                      { subject: 'AI-302 Computer Vision', time: 'Yesterday, 11:00 AM', status: 'Present', color: 'bg-emerald-100 text-emerald-700' },
+                      { subject: 'DS-303 Big Data Analytics', time: '18 Sep, 02:00 PM', status: 'Late', color: 'bg-amber-100 text-amber-700' },
+                      { subject: 'HS-304 Soft Skills & Ethics', time: '17 Sep, 10:00 AM', status: 'Absent', color: 'bg-rose-100 text-rose-700' },
+                      { subject: 'AI-305 NLP Fundamentals', time: '16 Sep, 09:00 AM', status: 'Present', color: 'bg-emerald-100 text-emerald-700' },
+                    ].map((row, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 text-[11px]">
+                        <div>
+                          <p className="font-bold text-slate-800">{row.subject}</p>
+                          <p className="text-[10px] text-slate-400 font-medium">{row.time}</p>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${row.color}`}>
+                          {row.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => downloadReport(selectedStudent.id)}
+                    className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                    <span>Download Attendance Report (.xlsx)</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: ACADEMIC */}
+            {activeTab === 'Academic' && (
+              <div className="space-y-4 pt-2 text-xs">
+                {/* GPA & Standing Summary */}
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="p-3 bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl">
+                    <p className="text-[10px] font-bold text-indigo-700">Cumulative GPA</p>
+                    <p className="text-2xl font-extrabold text-indigo-900 mt-0.5">8.64 <span className="text-xs font-normal text-slate-400">/ 10</span></p>
+                    <span className="text-[9px] font-semibold text-indigo-600">First Class with Distinction</span>
+                  </div>
+                  <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl">
+                    <p className="text-[10px] font-bold text-slate-600">Section Rank</p>
+                    <p className="text-2xl font-extrabold text-slate-800 mt-0.5">#5</p>
+                    <span className="text-[9px] font-semibold text-blue-600">{selectedStudent.section} Standing</span>
+                  </div>
+                </div>
+
+                {/* Internal Assessment Breakdown */}
+                <div className="space-y-1.5">
+                  <h5 className="font-bold text-slate-800">Current Semester Internal Assessments</h5>
+                  <div className="space-y-1.5">
+                    {[
+                      { subject: 'AI-301 Deep Learning', cat1: '88/100', cat2: '92/100', grade: 'O' },
+                      { subject: 'AI-302 Computer Vision', cat1: '84/100', cat2: '86/100', grade: 'A+' },
+                      { subject: 'DS-303 Big Data Analytics', cat1: '78/100', cat2: '82/100', grade: 'A' },
+                    ].map((sub, idx) => (
+                      <div key={idx} className="p-2 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-[11px]">
+                        <div>
+                          <p className="font-bold text-slate-800">{sub.subject}</p>
+                          <p className="text-[10px] text-slate-400">CAT 1: {sub.cat1} | CAT 2: {sub.cat2}</p>
+                        </div>
+                        <span className="w-6 h-6 rounded-lg bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs">
+                          {sub.grade}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Marks Analyzer Feature Card */}
+                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-md shadow-blue-500/20 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    <h5 className="font-bold text-xs text-white">Student Marks AI Analyzer</h5>
+                  </div>
+                  <p className="text-[11px] text-blue-100 leading-snug">
+                    Inspect complete marks distribution, HOD academic reports, and AI performance predictions for {selectedStudent.full_name}.
+                  </p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Link
+                      to="/marks-analyzer"
+                      className="flex-1 py-1.5 px-2.5 bg-white text-blue-700 hover:bg-blue-50 font-bold rounded-xl text-[11px] text-center transition-colors shadow-xs"
+                    >
+                      In-Portal Analyzer →
+                    </Link>
+                    <a
+                      href="https://student-marks-ai-analyzer.onrender.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="py-1.5 px-2.5 bg-blue-500/40 hover:bg-blue-500/60 text-white font-bold rounded-xl text-[11px] flex items-center gap-1 transition-colors"
+                    >
+                      <span>Direct</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -952,6 +1204,209 @@ export default function StudentsPage() {
                   className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md shadow-blue-500/20"
                 >
                   Register Student
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Student Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base">Edit Student Details</h3>
+                  <p className="text-xs text-slate-500">Update academic profile and contact info</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4 text-xs font-semibold">
+              <div>
+                <label className="block text-slate-700 mb-1">Register Number</label>
+                <input
+                  type="text"
+                  disabled
+                  value={editForm.register_number}
+                  className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.full_name}
+                  onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-100/80 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:bg-white focus:border-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 mb-1">Department</label>
+                  <select
+                    value={editForm.department}
+                    onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-100/80 border border-slate-200 rounded-xl text-slate-900"
+                  >
+                    <option>AI & DS</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-700 mb-1">Section *</label>
+                  <select
+                    value={editForm.section}
+                    onChange={(e) => setEditForm({ ...editForm, section: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-blue-50 border-2 border-blue-400 rounded-xl font-bold text-blue-700"
+                  >
+                    <option>Section A</option>
+                    <option>Section B</option>
+                    <option>Section C</option>
+                    <option>Section D</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-1">Email Address</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-100/80 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:bg-white focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-1">Phone Number</label>
+                <input
+                  type="text"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-100/80 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:bg-white focus:border-blue-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md shadow-blue-500/20"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Send Notice Modal */}
+      {showNoticeModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                  <Send className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base">Send Notice</h3>
+                  <p className="text-xs text-slate-500">Dispatch notice directly to classroom display & student</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowNoticeModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSendNoticeSubmit} className="space-y-4 text-xs font-semibold">
+              <div>
+                <label className="block text-slate-700 mb-1">Notice Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={noticeForm.title}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, title: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-100/80 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:bg-white focus:border-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 mb-1">Priority Level</label>
+                  <select
+                    value={noticeForm.priority}
+                    onChange={(e) => setNoticeForm({ ...noticeForm, priority: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-100/80 border border-slate-200 rounded-xl text-slate-900"
+                  >
+                    <option value={0}>Normal (Blue)</option>
+                    <option value={1}>Important (Yellow)</option>
+                    <option value={2}>Urgent (Red)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-700 mb-1">Display Duration</label>
+                  <select
+                    value={noticeForm.valid_duration}
+                    onChange={(e) => setNoticeForm({ ...noticeForm, valid_duration: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-100/80 border border-slate-200 rounded-xl text-slate-900"
+                  >
+                    <option value={15}>15 minutes</option>
+                    <option value={30}>30 minutes</option>
+                    <option value={60}>1 hour</option>
+                    <option value={1440}>1 day</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 mb-1">Message Content *</label>
+                <textarea
+                  rows={4}
+                  required
+                  value={noticeForm.content}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, content: e.target.value })}
+                  className="w-full p-3 bg-slate-100/80 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:bg-white focus:border-blue-500 resize-none font-medium"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowNoticeModal(false)}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-md shadow-amber-500/20"
+                >
+                  Send Notice
                 </button>
               </div>
             </form>
