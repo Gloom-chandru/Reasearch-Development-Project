@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useAuth } from '../contexts/AuthContext'
-import ThresholdSweepModal from '../components/ThresholdSweepModal'
 
 const API = '/api'
 
@@ -17,7 +16,6 @@ export default function ClassroomsPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editRoom, setEditRoom] = useState(null)
-  const [sweepRoom, setSweepRoom] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -157,10 +155,7 @@ export default function ClassroomsPage() {
           {/* Entry zone */}
           <div>
             <p className="text-sm font-medium text-gray-700 mb-2">
-              Entry Zone (fractions of frame, 0–1).{' '}
-              <span className="font-normal text-gray-500">
-                Note: 2D centroid approximation — see §7.5 of project spec.
-              </span>
+              Entry Detection Zone (fractions of frame, 0–1)
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[['entry_zone_x1', 'X1'], ['entry_zone_y1', 'Y1'], ['entry_zone_x2', 'X2'], ['entry_zone_y2', 'Y2']].map(([key, label]) => (
@@ -203,37 +198,21 @@ export default function ClassroomsPage() {
               {room.capacity != null && <p>Capacity: {room.capacity}</p>}
               <p>Zone: ({room.entry_zone_x1?.toFixed(2)},{room.entry_zone_y1?.toFixed(2)}) → ({room.entry_zone_x2?.toFixed(2)},{room.entry_zone_y2?.toFixed(2)})</p>
             </div>
-            {/* Threshold Validation Status Badge */}
-            <div className="pt-0.5">
-              {room.threshold_validated ? (
-                <span className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
-                  ✓ Validated (thr={room.recognition_threshold != null ? Number(room.recognition_threshold).toFixed(2) : '0.40'})
-                </span>
-              ) : (
-                <span className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-medium">
-                  ⚠ Threshold Unvalidated
-                </span>
-              )}
-            </div>
             {canManage && (
               <div className="flex gap-2 pt-1">
                 <button onClick={() => {
                   setEditRoom(room)
                   setForm({ ...room, floor: room.floor ?? '', capacity: room.capacity ?? '' })
                   setShowForm(true)
-                }} className="flex-1 px-2 py-1.5 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100">
+                }} className="flex-1 px-2 py-1.5 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 font-medium">
                   Edit
                 </button>
-                <button onClick={() => setSweepRoom(room)}
-                  className="flex-1 px-2 py-1.5 text-xs bg-indigo-50 text-indigo-700 rounded hover:bg-indigo-100 font-medium">
-                  Sweep
-                </button>
                 <button onClick={() => openEnrollPanel(room)}
-                  className="flex-1 px-2 py-1.5 text-xs bg-teal-50 text-teal-700 rounded hover:bg-teal-100">
+                  className="flex-1 px-2 py-1.5 text-xs bg-teal-50 text-teal-700 rounded hover:bg-teal-100 font-medium">
                   Enrollments
                 </button>
                 <a href={`/display/${room.id}`} target="_blank" rel="noreferrer"
-                  className="flex-1 px-2 py-1.5 text-xs bg-gray-50 text-gray-700 rounded hover:bg-gray-100 text-center">
+                  className="flex-1 px-2 py-1.5 text-xs bg-gray-50 text-gray-700 rounded hover:bg-gray-100 text-center font-medium">
                   Display ↗
                 </a>
               </div>
@@ -245,18 +224,7 @@ export default function ClassroomsPage() {
         )}
       </div>
 
-      {/* Threshold Sweep Modal */}
-      {sweepRoom && (
-        <ThresholdSweepModal
-          classroom={sweepRoom}
-          onClose={() => setSweepRoom(null)}
-          onSuccess={(newThr) => {
-            setClassrooms(prev => prev.map(c => c.id === sweepRoom.id ? { ...c, threshold_validated: true, recognition_threshold: newThr } : c))
-            setSuccess(`Threshold sweep calibrated ${sweepRoom.name} to ${newThr.toFixed(2)}`)
-            setTimeout(() => setSuccess(''), 3000)
-          }}
-        />
-      )}
+
 
       {/* Enrollment panel modal */}
       {enrollPanel && (

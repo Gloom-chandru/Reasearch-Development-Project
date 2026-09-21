@@ -15,7 +15,6 @@ from sqlalchemy.orm import Session
 
 from app.models.attendance import AttendanceRecord
 from app.models.audit import AuditLog
-from app.models.experiment import Experiment
 from app.models.notice import Notice
 from app.models.session import AttendanceSession
 from app.models.student import Student
@@ -97,11 +96,6 @@ class DashboardService:
                 (Notice.valid_until >= now) | (Notice.valid_until.is_(None)),
             )
             .scalar() or 0
-        )
-
-        # ── Experiment count ──────────────────────────────────────────
-        total_experiments = (
-            self.db.query(func.count(Experiment.id)).scalar() or 0
         )
 
         # ── Recent 10 sessions ────────────────────────────────────────
@@ -228,7 +222,6 @@ class DashboardService:
                 "manual":  att_by_status.get("manual", 0),
             },
             "active_notices":    active_notices,
-            "total_experiments": total_experiments,
             "recent_sessions":   recent_sessions,
             "attendance_chart":  attendance_chart,
             "recent_activity":   recent_activity,

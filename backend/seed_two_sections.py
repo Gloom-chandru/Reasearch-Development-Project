@@ -14,13 +14,16 @@ if BACKEND not in sys.path:
 os.environ.setdefault("DATABASE_URL", "sqlite:///./classroom.db")
 os.environ.setdefault("SECRET_KEY", "change-this-to-a-long-random-string-production")
 
+import datetime
 from app.database import SessionLocal, engine, Base
 from app.models.student import Student
 from app.models.classroom import Classroom
 from app.models.subject import Subject
 from app.models.enrollment import ClassroomEnrollment
 from app.models.face_embedding import FaceEmbedding
-from app.models.attendance import AttendanceRecord
+from app.models.attendance import AttendanceRecord, AttendanceStatus, RecognitionDecision
+from app.models.session import AttendanceSession, SessionStatus
+from app.models.config import AttendanceConfiguration
 from app.models.user import User
 
 db = SessionLocal()
@@ -162,15 +165,94 @@ def main():
     admin = db.query(User).filter_by(username="admin").first()
     admin_id = admin.id if admin else None
 
-    # Get classrooms AIDS-1A and AIDS-1B
-    cls_1a = db.query(Classroom).filter_by(code="AIDS-1A").first()
-    cls_1b = db.query(Classroom).filter_by(code="AIDS-1B").first()
-    subj_101 = db.query(Subject).filter_by(code="AIDS-101").first()
-    subj_102 = db.query(Subject).filter_by(code="AIDS-102").first()
+    # Clean out placeholder classrooms not in active sections
+    active_codes = ["AIDS-1A", "AIDS-1B"]
+    old_classrooms = db.query(Classroom).filter(~Classroom.code.in_(active_codes)).all()
+    for old_c in old_classrooms:
+        db.query(AttendanceSession).filter_by(classroom_id=old_c.id).delete()
+        db.query(AttendanceConfiguration).filter_by(classroom_id=old_c.id).delete()
+        db.delete(old_c)
+    db.commit()
 
-    subjects = [s for s in [subj_101, subj_102] if s]
+    # Ensure Classrooms AIDS-1A and AIDS-1B exist with clear Section names
+    cls_1a = db.query(Classroom).filter_by(code="AIDS-1A").first()
+    if not cls_1a:
+        cls_1a = Classroom(
+            name="AI & DS - Section A",
+            code="AIDS-1A",
+            floor=1,
+            capacity=60,
+            entry_zone_x1=0.15,
+            entry_zone_y1=0.10,
+            entry_zone_x2=0.85,
+            entry_zone_y2=0.90,
+            is_active=True,
+        )
+        db.add(cls_1a)
+    else:
+        cls_1a.name = "AI & DS - Section A"
+        cls_1a.floor = 1
+        cls_1a.capacity = 60
+        cls_1a.is_active = True
+
+    cls_1b = db.query(Classroom).filter_by(code="AIDS-1B").first()
+    if not cls_1b:
+        cls_1b = Classroom(
+            name="AI & DS - Section B",
+            code="AIDS-1B",
+            floor=1,
+            capacity=60,
+            entry_zone_x1=0.15,
+            entry_zone_y1=0.10,
+            entry_zone_x2=0.85,
+            entry_zone_y2=0.90,
+            is_active=True,
+        )
+        db.add(cls_1b)
+    else:
+        cls_1b.name = "AI & DS - Section B"
+        cls_1b.floor = 1
+        cls_1b.capacity = 60
+        cls_1b.is_active = True
+    db.commit()
+
+    # Ensure AttendanceConfiguration is pre-validated
+    for room in [cls_1a, cls_1b]:
+        cfg = db.query(AttendanceConfiguration).filter_by(classroom_id=room.id).first()
+        if not cfg:
+            cfg = AttendanceConfiguration(
+                classroom_id=room.id,
+                section="Section A" if room.code == "AIDS-1A" else "Section B",
+                recognition_threshold=0.40,
+                min_face_size=50,
+                blur_threshold=15.0,
+                entry_zone_enabled=True,
+                liveness_enabled=False,
+                threshold_validated=True,
+                is_active=True,
+            )
+            db.add(cfg)
+        else:
+            cfg.threshold_validated = True
+            cfg.recognition_threshold = 0.40
+    db.commit()
+
+    # Ensure core subjects exist
+    subj_101 = db.query(Subject).filter_by(code="AIDS-101").first()
+    if not subj_101:
+        subj_101 = Subject(name="Python Programming", code="AIDS-101", department="AIDS", is_active=True)
+        db.add(subj_101)
+
+    subj_102 = db.query(Subject).filter_by(code="AIDS-102").first()
+    if not subj_102:
+        subj_102 = Subject(name="Mathematics for AI", code="AIDS-102", department="AIDS", is_active=True)
+        db.add(subj_102)
+    db.commit()
+
+    subjects = [subj_101, subj_102]
 
     print(f"2. Seeding Section A: {len(SECTION_A_STUDENTS)} students...")
+    sec_a_student_objs = []
     for reg, name, email in SECTION_A_STUDENTS:
         s = Student(
             register_number=reg,
@@ -183,20 +265,21 @@ def main():
         )
         db.add(s)
         db.flush()
+        sec_a_student_objs.append(s)
 
-        if cls_1a:
-            for subj in subjects:
-                enr = ClassroomEnrollment(
-                    student_id=s.id,
-                    classroom_id=cls_1a.id,
-                    subject_id=subj.id,
-                    section="Section A",
-                    enrolled_by=admin_id,
-                    is_active=True,
-                )
-                db.add(enr)
+        for subj in subjects:
+            enr = ClassroomEnrollment(
+                student_id=s.id,
+                classroom_id=cls_1a.id,
+                subject_id=subj.id,
+                section="Section A",
+                enrolled_by=admin_id,
+                is_active=True,
+            )
+            db.add(enr)
 
     print(f"3. Seeding Section B: {len(SECTION_B_STUDENTS)} students...")
+    sec_b_student_objs = []
     for reg, name, email in SECTION_B_STUDENTS:
         s = Student(
             register_number=reg,
@@ -209,33 +292,126 @@ def main():
         )
         db.add(s)
         db.flush()
+        sec_b_student_objs.append(s)
 
-        if cls_1b:
-            for subj in subjects:
-                enr = ClassroomEnrollment(
-                    student_id=s.id,
-                    classroom_id=cls_1b.id,
-                    subject_id=subj.id,
-                    section="Section B",
-                    enrolled_by=admin_id,
-                    is_active=True,
-                )
-                db.add(enr)
+        for subj in subjects:
+            enr = ClassroomEnrollment(
+                student_id=s.id,
+                classroom_id=cls_1b.id,
+                subject_id=subj.id,
+                section="Section B",
+                enrolled_by=admin_id,
+                is_active=True,
+            )
+            db.add(enr)
+
+    db.commit()
+
+    # 4. Clean old sessions and seed fresh active & scheduled sessions
+    db.query(AttendanceSession).delete()
+    db.commit()
+
+    now = datetime.datetime.utcnow()
+    # Session 1: Section A active session
+    sess_a = AttendanceSession(
+        classroom_id=cls_1a.id,
+        subject_id=subj_101.id,
+        faculty_id=admin_id,
+        title="Python Programming — Lab (Section A)",
+        scheduled_start=now - datetime.timedelta(minutes=20),
+        scheduled_end=now + datetime.timedelta(minutes=40),
+        late_start_offset=5,
+        late_end_offset=15,
+        status=SessionStatus.ACTIVE,
+    )
+    db.add(sess_a)
+
+    # Session 2: Section B scheduled session
+    sess_b = AttendanceSession(
+        classroom_id=cls_1b.id,
+        subject_id=subj_101.id,
+        faculty_id=admin_id,
+        title="Python Programming — Lab (Section B)",
+        scheduled_start=now + datetime.timedelta(hours=1),
+        scheduled_end=now + datetime.timedelta(hours=2),
+        late_start_offset=5,
+        late_end_offset=15,
+        status=SessionStatus.SCHEDULED,
+    )
+    db.add(sess_b)
+
+    # Session 3: Completed morning session for Section A with sample records
+    sess_prev_a = AttendanceSession(
+        classroom_id=cls_1a.id,
+        subject_id=subj_102.id,
+        faculty_id=admin_id,
+        title="Mathematics for AI — Lecture (Section A)",
+        scheduled_start=now - datetime.timedelta(hours=3),
+        scheduled_end=now - datetime.timedelta(hours=2),
+        late_start_offset=5,
+        late_end_offset=15,
+        status=SessionStatus.COMPLETED,
+    )
+    db.add(sess_prev_a)
+
+    # Session 4: Completed morning session for Section B with sample records
+    sess_prev_b = AttendanceSession(
+        classroom_id=cls_1b.id,
+        subject_id=subj_102.id,
+        faculty_id=admin_id,
+        title="Mathematics for AI — Lecture (Section B)",
+        scheduled_start=now - datetime.timedelta(hours=3),
+        scheduled_end=now - datetime.timedelta(hours=2),
+        late_start_offset=5,
+        late_end_offset=15,
+        status=SessionStatus.COMPLETED,
+    )
+    db.add(sess_prev_b)
+    db.flush()
+
+    # Seed sample attendance for the completed sessions
+    # Section A: 52 present, 8 absent
+    for idx, s in enumerate(sec_a_student_objs):
+        st = AttendanceStatus.PRESENT if idx < 52 else AttendanceStatus.ABSENT_UNMARKED
+        rec = AttendanceRecord(
+            student_id=s.id,
+            session_id=sess_prev_a.id,
+            status=st,
+            recognition_decision=RecognitionDecision.MATCH if st == AttendanceStatus.PRESENT else RecognitionDecision.NOT_RECOGNIZED,
+            similarity_score=0.88 if st == AttendanceStatus.PRESENT else None,
+            captured_at=sess_prev_a.scheduled_start + datetime.timedelta(minutes=idx % 10 + 2),
+        )
+        db.add(rec)
+
+    # Section B: 54 present, 6 absent
+    for idx, s in enumerate(sec_b_student_objs):
+        st = AttendanceStatus.PRESENT if idx < 54 else AttendanceStatus.ABSENT_UNMARKED
+        rec = AttendanceRecord(
+            student_id=s.id,
+            session_id=sess_prev_b.id,
+            status=st,
+            recognition_decision=RecognitionDecision.MATCH if st == AttendanceStatus.PRESENT else RecognitionDecision.NOT_RECOGNIZED,
+            similarity_score=0.91 if st == AttendanceStatus.PRESENT else None,
+            captured_at=sess_prev_b.scheduled_start + datetime.timedelta(minutes=idx % 10 + 2),
+        )
+        db.add(rec)
 
     db.commit()
 
     total_students = db.query(Student).count()
     sec_a_count = db.query(Student).filter_by(section="Section A").count()
     sec_b_count = db.query(Student).filter_by(section="Section B").count()
-    enrolled_count = db.query(Student).filter(Student.enrollment_count > 0).count()
-    face_emb_count = db.query(FaceEmbedding).count()
+    classrooms_count = db.query(Classroom).count()
+    sessions_count = db.query(AttendanceSession).count()
+    att_count = db.query(AttendanceRecord).count()
 
     print("\n=== SUCCESS ===")
+    print(f"  Total Classrooms: {classrooms_count} (Section A and Section B)")
     print(f"  Total Students: {total_students}")
     print(f"  Section A: {sec_a_count}")
     print(f"  Section B: {sec_b_count}")
-    print(f"  Face-Enrolled Students: {enrolled_count}")
-    print(f"  Face Embeddings: {face_emb_count}")
+    print(f"  Total Sessions: {sessions_count}")
+    print(f"  Attendance Records: {att_count}")
 
 if __name__ == "__main__":
     main()

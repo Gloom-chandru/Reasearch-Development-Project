@@ -217,14 +217,9 @@ async def recognize_frame(
     Returns:
         Pipeline results for all detected faces
     """
-    # Check threshold validation gate
+    # Load classroom configuration if available
     cfg_repo = AttendanceConfigurationRepository(db)
     cfg = cfg_repo.get_for_classroom(classroom_id)
-    if not cfg or not cfg.threshold_validated:
-        return {
-            "error": "Recognition blocked: Operating threshold has not been empirically validated for this classroom. Run a threshold sweep before live recognition.",
-            "threshold_validated": False,
-        }
 
     # Decode image
     try:

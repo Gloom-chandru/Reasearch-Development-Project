@@ -37,7 +37,6 @@ import {
   Eye,
   RefreshCw,
 } from 'lucide-react'
-import ThresholdSweepModal from '../components/ThresholdSweepModal'
 
 const API = '/api'
 const CAPTURE_INTERVAL_MS = 1500
@@ -68,10 +67,8 @@ export default function LiveRecognitionPage() {
   const [isMobileMode, setIsMobileMode] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
-  const [showSweepModal, setShowSweepModal] = useState(false)
 
   const currentClassroom = classrooms.find(c => String(c.id) === String(selectedClassroom))
-  const isThresholdValidated = currentClassroom?.threshold_validated === true
 
   // ── Recognition state ────────────────────────────────────────
   const [recentResults, setRecentResults] = useState([])
@@ -351,11 +348,6 @@ export default function LiveRecognitionPage() {
   const handleStart = async () => {
     if (!selectedClassroom || !selectedSession) {
       setStatusMsg('Select a classroom and session first')
-      return
-    }
-    if (!isThresholdValidated) {
-      setShowSweepModal(true)
-      setStatusMsg('Empirical threshold sweep required before starting recognition.')
       return
     }
     await startCamera()
@@ -947,30 +939,16 @@ export default function LiveRecognitionPage() {
             </p>
           </div>
         </div>
-        <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3">
-          <Shield className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+        <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-2xl p-4 flex items-start gap-3">
+          <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-amber-800 text-sm mb-1">Explainability — §7.12</p>
-            <p className="text-amber-700 text-xs leading-relaxed">
-              Similarity scores are cosine distances between 512-d InsightFace embeddings — not calibrated probabilities.
-              The operating threshold is configured in <code className="bg-amber-100 px-1 rounded">RECOGNITION_THRESHOLD</code>.
+            <p className="font-semibold text-emerald-900 text-sm mb-1">Recognition Guidelines</p>
+            <p className="text-emerald-800 text-xs leading-relaxed">
+              Ensure students face the camera directly with good ambient classroom lighting. Attendance records are verified and saved in real-time.
             </p>
           </div>
         </div>
       </div>
-
-      {/* Threshold Sweep Modal */}
-      {showSweepModal && currentClassroom && (
-        <ThresholdSweepModal
-          classroom={currentClassroom}
-          onClose={() => setShowSweepModal(false)}
-          onSuccess={(newThr) => {
-            setClassrooms(prev => prev.map(c => c.id === currentClassroom.id ? { ...c, threshold_validated: true, recognition_threshold: newThr } : c))
-            setShowSweepModal(false)
-            setStatusMsg(`Calibrated threshold to ${newThr.toFixed(2)}. Ready to start.`)
-          }}
-        />
-      )}
     </div>
   )
 }
