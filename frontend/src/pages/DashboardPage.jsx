@@ -145,17 +145,16 @@ export default function DashboardPage() {
   const totalSessionsCount = stats?.total_sessions || 0
   const activeSessionsCount = stats?.sessions_by_status?.active || 0
 
-  // Dynamic attendance chart data from stats
+  // Dynamic attendance chart data from stats (Mon - Sat academic schedule)
   const chartData = (stats?.attendance_chart && stats.attendance_chart.length > 0)
-    ? stats.attendance_chart
+    ? stats.attendance_chart.filter(d => d.day !== 'Sun' && d.label !== 'Sun')
     : [
         { day: 'Mon', label: 'Mon', present: 0, absent: 0 },
         { day: 'Tue', label: 'Tue', present: 0, absent: 0 },
         { day: 'Wed', label: 'Wed', present: 0, absent: 0 },
         { day: 'Thu', label: 'Thu', present: 0, absent: 0 },
         { day: 'Fri', label: 'Fri', present: 0, absent: 0 },
-        { day: 'Sat', label: 'Sat', present: 0, absent: 0 },
-        { day: 'Sun', label: 'Sun', present: 0, absent: 0 }
+        { day: 'Sat', label: 'Sat', present: 0, absent: 0 }
       ]
   const maxChartVal = Math.max(1, ...chartData.map(d => Math.max(d.present, d.absent)))
 

@@ -344,40 +344,54 @@ export default function AnalyticsPage() {
             <tbody className="divide-y divide-slate-100">
               <tr className="hover:bg-slate-50/50 transition-colors">
                 <td className="px-4 py-3.5 font-bold text-slate-900">
-                  AIDS-101: Python Programming
+                  AI3021: IT in Agricultural System (ITAS)
                 </td>
                 <td className="px-4 py-3.5 text-slate-600">AI & DS</td>
-                <td className="px-4 py-3.5 text-center font-bold text-emerald-600">88.5%</td>
-                <td className="px-4 py-3.5 text-center font-bold text-emerald-600">91.2%</td>
-                <td className="px-4 py-3.5 text-center font-black text-slate-900">89.8%</td>
+                <td className="px-4 py-3.5 text-center font-bold text-emerald-600">91.5%</td>
+                <td className="px-4 py-3.5 text-center font-bold text-emerald-600">93.2%</td>
+                <td className="px-4 py-3.5 text-center font-black text-slate-900">92.4%</td>
                 <td className="px-4 py-3.5 text-right">
                   <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px]">
+                    Excellent
+                  </span>
+                </td>
+              </tr>
+              <tr className="hover:bg-slate-50/50 transition-colors">
+                <td className="px-4 py-3.5 font-bold text-slate-900">
+                  GE3751: Principles Of Management (POM)
+                </td>
+                <td className="px-4 py-3.5 text-slate-600">AI & DS</td>
+                <td className="px-4 py-3.5 text-center font-bold text-emerald-600">93.3%</td>
+                <td className="px-4 py-3.5 text-center font-bold text-emerald-600">91.7%</td>
+                <td className="px-4 py-3.5 text-center font-black text-slate-900">92.5%</td>
+                <td className="px-4 py-3.5 text-right">
+                  <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px]">
+                    Excellent
+                  </span>
+                </td>
+              </tr>
+              <tr className="hover:bg-slate-50/50 transition-colors">
+                <td className="px-4 py-3.5 font-bold text-slate-900">
+                  OME354: Applied Design Thinking (ADT)
+                </td>
+                <td className="px-4 py-3.5 text-slate-600">AI & DS</td>
+                <td className="px-4 py-3.5 text-center font-bold text-blue-600">86.7%</td>
+                <td className="px-4 py-3.5 text-center font-bold text-blue-600">88.3%</td>
+                <td className="px-4 py-3.5 text-center font-black text-slate-900">87.5%</td>
+                <td className="px-4 py-3.5 text-right">
+                  <span className="px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full font-bold text-[10px]">
                     Good
                   </span>
                 </td>
               </tr>
               <tr className="hover:bg-slate-50/50 transition-colors">
                 <td className="px-4 py-3.5 font-bold text-slate-900">
-                  AIDS-102: Mathematics for AI
+                  GE3791: Human Values & Ethics (HVE)
                 </td>
                 <td className="px-4 py-3.5 text-slate-600">AI & DS</td>
-                <td className="px-4 py-3.5 text-center font-bold text-blue-600">85.0%</td>
-                <td className="px-4 py-3.5 text-center font-bold text-blue-600">88.3%</td>
-                <td className="px-4 py-3.5 text-center font-black text-slate-900">86.6%</td>
-                <td className="px-4 py-3.5 text-right">
-                  <span className="px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full font-bold text-[10px]">
-                    Normal
-                  </span>
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="px-4 py-3.5 font-bold text-slate-900">
-                  AIDS-201: Data Structures & Algorithms
-                </td>
-                <td className="px-4 py-3.5 text-slate-600">AI & DS</td>
-                <td className="px-4 py-3.5 text-center font-bold text-emerald-600">90.1%</td>
-                <td className="px-4 py-3.5 text-center font-bold text-emerald-600">92.0%</td>
-                <td className="px-4 py-3.5 text-center font-black text-slate-900">91.0%</td>
+                <td className="px-4 py-3.5 text-center font-bold text-emerald-600">91.7%</td>
+                <td className="px-4 py-3.5 text-center font-bold text-emerald-600">93.3%</td>
+                <td className="px-4 py-3.5 text-center font-black text-slate-900">92.5%</td>
                 <td className="px-4 py-3.5 text-right">
                   <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full font-bold text-[10px]">
                     Excellent
