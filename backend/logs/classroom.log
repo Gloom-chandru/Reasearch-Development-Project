@@ -5933,3 +5933,4 @@
 {"timestamp": "2026-09-21T03:46:43.116101+00:00", "level": "INFO", "logger": "classroom", "message": "Shutting down Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 118}
 {"timestamp": "2026-09-21T03:47:04.092587+00:00", "level": "INFO", "logger": "classroom", "message": "Starting Smart Classroom backend...", "module": "main", "function": "lifespan", "line": 74}
 {"timestamp": "2026-09-21T03:47:04.093626+00:00", "level": "WARNING", "logger": "classroom", "message": "Alembic auto-migration failed: No module named 'alembic.config'. Falling back to create_all.", "module": "main", "function": "lifespan", "line": 90}
+{"timestamp": "2026-09-21T03:48:29.292953+00:00", "level": "INFO", "logger": "classroom", "message": "User login: admin (super_admin)", "module": "auth_service", "function": "login", "line": 77, "request_id": "6f51429e84954e2ab4174e8e5666ae87"}
