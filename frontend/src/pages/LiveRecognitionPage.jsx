@@ -36,7 +36,9 @@ import {
   ShieldCheck,
   Eye,
   RefreshCw,
+  Video,
 } from 'lucide-react'
+import ThresholdSweepModal from '../components/ThresholdSweepModal'
 
 const API = '/api'
 const CAPTURE_INTERVAL_MS = 1500
@@ -67,8 +69,10 @@ export default function LiveRecognitionPage() {
   const [isMobileMode, setIsMobileMode] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
+  const [showSweepModal, setShowSweepModal] = useState(false)
 
   const currentClassroom = classrooms.find(c => String(c.id) === String(selectedClassroom))
+  const isThresholdValidated = currentClassroom ? (currentClassroom.threshold_validated ?? true) : true
 
   // ── Recognition state ────────────────────────────────────────
   const [recentResults, setRecentResults] = useState([])
@@ -949,16 +953,18 @@ export default function LiveRecognitionPage() {
           </div>
         </div>
       </div>
-    </div>
-  )
-}
 
-// Video icon for desktop header (not imported at top to keep mobile bundle clean)
-function Video(props) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.934a.5.5 0 0 0-.777-.416L16 11" />
-      <rect x="2" y="6" width="14" height="12" rx="2" />
-    </svg>
+      {/* Threshold Sweep Modal */}
+      {showSweepModal && currentClassroom && (
+        <ThresholdSweepModal
+          classroom={currentClassroom}
+          onClose={() => setShowSweepModal(false)}
+          onSuccess={() => {
+            setShowSweepModal(false)
+            axios.get(`${API}/classrooms`).then(r => setClassrooms(r.data.classrooms || []))
+          }}
+        />
+      )}
+    </div>
   )
 }

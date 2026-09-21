@@ -34,9 +34,11 @@ export default function ClassroomsPage() {
   const fetchClassrooms = async () => {
     try {
       const res = await axios.get(`${API}/classrooms`)
-      setClassrooms(res.data.classrooms || [])
+      const list = res.data?.classrooms || (Array.isArray(res.data) ? res.data : [])
+      setClassrooms(list)
     } catch (err) {
       setError('Failed to load classrooms — is the backend running?')
+      setClassrooms([])
     }
     finally { setLoading(false) }
   }
@@ -77,16 +79,20 @@ export default function ClassroomsPage() {
   }
 
   const openEnrollPanel = async (room) => {
+    if (!room) return
     setEnrollPanel(room)
     try {
       const [sRes, subRes, enrRes] = await Promise.all([
-        axios.get(`${API}/students?limit=500`),
-        axios.get(`${API}/sessions/subjects`),
-        axios.get(`${API}/classrooms/${room.id}/enrollments`),
+        axios.get(`${API}/students?limit=500`).catch(() => ({ data: { students: [] } })),
+        axios.get(`${API}/sessions/subjects`).catch(() => ({ data: { subjects: [] } })),
+        axios.get(`${API}/classrooms/${room.id}/enrollments`).catch(() => ({ data: { enrollments: [] } })),
       ])
-      setStudents(sRes.data.students || [])
-      setSubjects(subRes.data.subjects || [])
-      setEnrollments(enrRes.data.enrollments || [])
+      const sList = sRes.data?.students || (Array.isArray(sRes.data) ? sRes.data : [])
+      const subList = subRes.data?.subjects || (Array.isArray(subRes.data) ? subRes.data : [])
+      const enrList = enrRes.data?.enrollments || (Array.isArray(enrRes.data) ? enrRes.data : [])
+      setStudents(sList)
+      setSubjects(subList)
+      setEnrollments(enrList)
     } catch (err) {
       setError('Failed to load enrollment data: ' + (err.response?.data?.detail || err.message))
     }
@@ -196,7 +202,7 @@ export default function ClassroomsPage() {
             <div className="text-xs text-gray-500 space-y-1">
               {room.floor != null && <p>Floor: {room.floor}</p>}
               {room.capacity != null && <p>Capacity: {room.capacity}</p>}
-              <p>Zone: ({room.entry_zone_x1?.toFixed(2)},{room.entry_zone_y1?.toFixed(2)}) → ({room.entry_zone_x2?.toFixed(2)},{room.entry_zone_y2?.toFixed(2)})</p>
+              <p>Zone: ({Number(room.entry_zone_x1 || 0).toFixed(2)}, {Number(room.entry_zone_y1 || 0).toFixed(2)}) → ({Number(room.entry_zone_x2 || 1).toFixed(2)}, {Number(room.entry_zone_y2 || 1).toFixed(2)})</p>
             </div>
             {canManage && (
               <div className="flex gap-2 pt-1">

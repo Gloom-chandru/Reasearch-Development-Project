@@ -26,11 +26,14 @@ function NoticeCountdown({ notice }) {
 
     const tick = () => {
       const now      = Date.now()
-      const end      = parseUTC(notice.valid_until).getTime()
-      const from     = parseUTC(notice.valid_from).getTime()
+      const endObj   = parseUTC(notice?.valid_until)
+      const fromObj  = parseUTC(notice?.valid_from)
+      if (!endObj || isNaN(endObj.getTime())) { setPct(100); setTimeLeft(null); return }
+      const end      = endObj.getTime()
+      const from     = fromObj && !isNaN(fromObj.getTime()) ? fromObj.getTime() : (end - 300000)
       const totalMs  = Math.max(end - from, 1)
       const remaining = Math.max(0, end - now)
-      setPct((remaining / totalMs) * 100)
+      setPct(Math.min(100, Math.max(0, (remaining / totalMs) * 100)))
       const secs = Math.ceil(remaining / 1000)
       setTimeLeft(secs)
     }
@@ -290,7 +293,7 @@ export default function ClassroomDisplay() {
                     <p className="text-xs text-green-400 capitalize">{r.status}</p>
                     {r.similarity_score != null && (
                       <p className="text-xs text-gray-400 mt-1 font-mono">
-                        {r.similarity_score.toFixed(3)}
+                        {Number(r.similarity_score || 0).toFixed(3)}
                       </p>
                     )}
                   </div>

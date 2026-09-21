@@ -14,8 +14,12 @@ export function getCsrfToken() {
   return match ? decodeURIComponent(match[2]) : null
 }
 
-// Attach X-CSRF-Token on state-changing requests
+// Attach Authorization Bearer token & X-CSRF-Token on requests
 axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  if (token && !config.headers['Authorization']) {
+    config.headers['Authorization'] = `Bearer ${token}`
+  }
   const method = config.method ? config.method.toLowerCase() : ''
   if (['post', 'put', 'delete', 'patch'].includes(method)) {
     const csrfToken = getCsrfToken()
@@ -44,7 +48,10 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     const res = await axios.post(`${API_BASE}/auth/login`, { username, password })
-    const { user: userData } = res.data
+    const { user: userData, access_token } = res.data
+    if (access_token) {
+      localStorage.setItem('token', access_token)
+    }
     setUser(userData)
     return userData
   }
@@ -55,6 +62,7 @@ export function AuthProvider({ children }) {
     } catch {
       // Ignore network errors on logout
     } finally {
+      localStorage.removeItem('token')
       setUser(null)
     }
   }

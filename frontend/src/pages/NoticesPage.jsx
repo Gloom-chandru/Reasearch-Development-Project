@@ -57,13 +57,16 @@ function ClassroomTV({ classroom, allNotices }) {
 
     const tick = () => {
       const now        = Date.now()
-      const end        = parseUTC(topNotice.valid_until).getTime()
-      const from       = parseUTC(topNotice.valid_from).getTime()
-      const totalMs    = end - from
+      const endObj     = parseUTC(topNotice?.valid_until)
+      const fromObj    = parseUTC(topNotice?.valid_from)
+      if (!endObj || isNaN(endObj.getTime())) { setTimeLeft(null); setPct(100); return }
+      const end        = endObj.getTime()
+      const from       = fromObj && !isNaN(fromObj.getTime()) ? fromObj.getTime() : (end - 300000)
+      const totalMs    = Math.max(end - from, 1)
       const remaining  = Math.max(0, end - now)
       const secs       = Math.ceil(remaining / 1000)
       setTimeLeft(secs)
-      setPct(totalMs > 0 ? Math.max(0, (remaining / totalMs) * 100) : 0)
+      setPct(Math.min(100, Math.max(0, (remaining / totalMs) * 100)))
     }
 
     tick()

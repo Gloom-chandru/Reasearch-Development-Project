@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useWebSocket } from '../contexts/WebSocketContext'
 import { useNotification } from '../contexts/NotificationContext'
+import ErrorBoundary from './ErrorBoundary'
 import {
   LayoutDashboard,
   Users,
@@ -280,7 +281,9 @@ export default function Layout() {
 
         {/* Dynamic Page Content — Full Width */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
 
         {/* Global Footer — Full Width */}
