@@ -24,7 +24,9 @@ import {
   Menu,
   X,
   GraduationCap,
-  Cpu
+  Cpu,
+  ExternalLink,
+  Award
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -37,6 +39,13 @@ const NAV_ITEMS = [
   { to: '/notices', label: 'Notices', icon: Bell, badge: true, roles: null },
   { to: '/users', label: 'Users', icon: KeyRound, roles: ['super_admin', 'hod'] },
   { to: '/analytics', label: 'Analytics', icon: BarChart3, roles: null },
+  {
+    to: '/marks-analyzer',
+    label: 'Marks Analyzer',
+    icon: Award,
+    roles: null,
+    externalUrl: 'https://student-marks-ai-analyzer.onrender.com/'
+  },
   { to: '/audit', label: 'Audit Logs', icon: FileText, roles: ['super_admin', 'hod', 'coordinator'] },
 ]
 
@@ -130,9 +139,25 @@ export default function Layout() {
                     <Icon className="w-4 h-4 text-slate-300 group-hover:text-white transition-colors" />
                     <span>{item.label}</span>
                   </div>
-                  {item.badge && (
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {item.badge && (
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                    )}
+                    {item.externalUrl && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          window.open(item.externalUrl, '_blank', 'noopener,noreferrer')
+                        }}
+                        title="Open Marks Analyzer in new window"
+                        className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </NavLink>
               )
             })}

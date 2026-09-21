@@ -15,6 +15,7 @@ import ClassroomDisplay from './pages/ClassroomDisplay'
 import AnalyticsPage from './pages/AnalyticsPage'
 import LiveRecognitionPage from './pages/LiveRecognitionPage'
 import AuditLogPage from './pages/AuditLogPage'
+import MarksAnalyzerPage from './pages/MarksAnalyzerPage'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -40,6 +41,7 @@ export default function App() {
                 <Route path="/notices" element={<NoticesPage />} />
                 <Route path="/users" element={<UsersPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
+                <Route path="/marks-analyzer" element={<MarksAnalyzerPage />} />
                 <Route path="/live" element={<LiveRecognitionPage />} />
                 <Route path="/audit" element={<AuditLogPage />} />
               </Route>

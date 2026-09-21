@@ -23,7 +23,9 @@ import {
   CheckCircle2,
   Activity,
   ChevronRight,
-  TrendingUp
+  TrendingUp,
+  Award,
+  ExternalLink
 } from 'lucide-react'
 
 const API = '/api'
@@ -569,7 +571,28 @@ export default function DashboardPage() {
               <h3 className="font-bold text-slate-900 text-sm">Quick Actions</h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
+              <Link
+                to="/marks-analyzer"
+                className="p-3 rounded-2xl bg-gradient-to-br from-blue-50/90 to-indigo-50/90 hover:from-blue-100 hover:to-indigo-100 border border-blue-200/90 hover:border-blue-300 flex items-center justify-between text-left group transition-all col-span-2 shadow-xs"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                    <Award className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-slate-800">Marks Analyzer</span>
+                      <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-blue-100 text-blue-700">AI</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-medium">Academic performance & score distributions</p>
+                  </div>
+                </div>
+                <div className="p-1 rounded-lg bg-white/80 border border-slate-200/60 text-slate-400 group-hover:text-blue-600 shrink-0">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </div>
+              </Link>
+
               <Link
                 to="/live"
                 className="p-3.5 rounded-2xl bg-slate-50 hover:bg-blue-50/80 border border-slate-200/80 hover:border-blue-200 flex flex-col items-center text-center group transition-all"

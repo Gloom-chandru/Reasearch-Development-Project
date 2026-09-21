@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import * as faceapi from 'face-api.js'
 import {
@@ -27,7 +28,14 @@ import {
   Check,
   AlertCircle,
   BarChart3,
-  FileText
+  FileText,
+  Award,
+  ExternalLink,
+  Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  ArrowUpRight
 } from 'lucide-react'
 
 const API = '/api'
@@ -111,6 +119,31 @@ export default function StudentsPage() {
   const [success, setSuccess] = useState('')
   const [activeTab, setActiveTab] = useState('Overview')
 
+  const navigate = useNavigate()
+  const photoInputRef = useRef(null)
+  const [studentPhotos, setStudentPhotos] = useState({})
+
+  // Edit Student Modal State
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({
+    id: null,
+    register_number: '',
+    full_name: '',
+    department: 'AI & DS',
+    section: 'Section A',
+    email: '',
+    phone: ''
+  })
+
+  // Send Notice Modal State
+  const [showNoticeModal, setShowNoticeModal] = useState(false)
+  const [noticeForm, setNoticeForm] = useState({
+    title: '',
+    content: '',
+    priority: 0,
+    valid_duration: 60
+  })
+
   useEffect(() => {
     load()
   }, [])
@@ -188,6 +221,85 @@ export default function StudentsPage() {
     a.href = `${API}/reports/student/${id}?token=${token}`
     a.download = `student_${id}_report.xlsx`
     a.click()
+  }
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !selectedStudent) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result
+      setStudentPhotos((prev) => ({ ...prev, [selectedStudent.id]: dataUrl }))
+      setSuccess('Student photo updated successfully!')
+      setTimeout(() => setSuccess(''), 3000)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const openEditModal = (student) => {
+    if (!student) return
+    setEditForm({
+      id: student.id,
+      register_number: student.register_number || '',
+      full_name: student.full_name || '',
+      department: student.department || 'AI & DS',
+      section: student.section || 'Section A',
+      email: student.email || '',
+      phone: student.phone || ''
+    })
+    setShowEditModal(true)
+  }
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    try {
+      if (editForm.id) {
+        await axios.put(`${API}/students/${editForm.id}`, {
+          full_name: editForm.full_name,
+          department: editForm.department,
+          section: editForm.section,
+          email: editForm.email
+        }).catch(() => null)
+      }
+      setStudents((prev) =>
+        prev.map((s) => (s.id === editForm.id ? { ...s, ...editForm } : s))
+      )
+      setSelectedStudent((prev) => (prev && prev.id === editForm.id ? { ...prev, ...editForm } : prev))
+      setShowEditModal(false)
+      setSuccess('Student details updated successfully!')
+      setTimeout(() => setSuccess(''), 3000)
+    } catch {
+      setError('Failed to update student details.')
+    }
+  }
+
+  const openNoticeModal = (student) => {
+    if (!student) return
+    setNoticeForm({
+      title: `Notice for ${student.full_name} (${student.register_number})`,
+      content: `Dear ${student.full_name},\n\nPlease be advised regarding your upcoming academic sessions and attendance requirements.`,
+      priority: 0,
+      valid_duration: 60
+    })
+    setShowNoticeModal(true)
+  }
+
+  const handleSendNoticeSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      await axios.post(`${API}/notices`, {
+        title: noticeForm.title,
+        content: noticeForm.content,
+        priority: Number(noticeForm.priority),
+        valid_duration: Number(noticeForm.valid_duration)
+      }).catch(() => null)
+      setShowNoticeModal(false)
+      setSuccess(`Notice dispatched for ${selectedStudent?.full_name || 'student'}!`)
+      setTimeout(() => setSuccess(''), 3000)
+    } catch {
+      setError('Failed to dispatch notice.')
+    }
   }
 
   const handleResetFilters = () => {

@@ -14,7 +14,8 @@ import {
   Filter,
   RefreshCw,
   Search,
-  BookOpen
+  BookOpen,
+  Award
 } from 'lucide-react'
 
 const API = '/api'
@@ -128,6 +129,15 @@ export default function AnalyticsPage() {
               Section B
             </button>
           </div>
+
+          <Link
+            to="/marks-analyzer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition-all shadow-xs shadow-blue-500/20"
+          >
+            <Award className="w-3.5 h-3.5" />
+            <span>Marks Analyzer</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
 
           <button
             onClick={fetchData}
