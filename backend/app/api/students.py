@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/students", tags=["students"])
 def create_student(
     data: StudentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("super_admin", "hod", "coordinator")),
+    current_user: User = Depends(require_role("super_admin", "hod", "coordinator", "faculty")),
 ):
     service = StudentService(db)
     return service.create_student(data)
@@ -57,7 +57,7 @@ def update_student(
     student_id: int,
     data: StudentUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("super_admin", "hod", "coordinator")),
+    current_user: User = Depends(require_role("super_admin", "hod", "coordinator", "faculty")),
 ):
     service = StudentService(db)
     return service.update_student(student_id, data)

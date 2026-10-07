@@ -1454,6 +1454,7 @@ function EnrollmentModal({ student, onClose }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const captureRef = useRef(null)
+  const fileInputRef = useRef(null)
   const rafRef = useRef(null)
   const doCaptureRef = useRef(null)
 
@@ -1735,13 +1736,13 @@ function EnrollmentModal({ student, onClose }) {
     return canvas.toDataURL('image/jpeg', 0.9).split(',')[1]
   }
 
-  const doCapture = async () => {
+  const doCapture = async (overrideBase64 = null) => {
     if (isSaving.current) return
     isSaving.current = true
     greenSince.current = 0
     lastCapture.current = Date.now()
 
-    const base64 = grabBase64()
+    const base64 = overrideBase64 || grabBase64()
     if (!base64) {
       isSaving.current = false
       return
@@ -1792,6 +1793,14 @@ function EnrollmentModal({ student, onClose }) {
         : err.message || 'Server error'
       setStatus('red', `❌ ${msg}`)
       setUi((prev) => ({ ...prev, saving: false }))
+      setTimeout(() => {
+        if (mounted.current) {
+          isSaving.current = false
+          if (captureCount.current < MAX_SAMPLES)
+            setStatus('gray', 'Position your face in the oval')
+        }
+      }, 3000)
+      return
     }
 
     setTimeout(() => {
@@ -1803,10 +1812,23 @@ function EnrollmentModal({ student, onClose }) {
     }, 1200)
   }
 
-  doCaptureRef.current = doCapture
+  doCaptureRef.current = () => doCapture()
 
   const manualCapture = () => {
     if (!isSaving.current) doCapture()
+  }
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result
+      const base64 = result.includes(',') ? result.split(',')[1] : result
+      doCapture(base64)
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
   }
 
   const isDone = ui.count >= MAX_SAMPLES
@@ -1934,15 +1956,34 @@ function EnrollmentModal({ student, onClose }) {
           )}
         </div>
 
-        <div className="px-5 py-3 flex gap-3">
+        <div className="px-5 py-3 flex gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept="image/*"
+            className="hidden"
+          />
           {!isDone ? (
-            <button
-              onClick={manualCapture}
-              disabled={ui.saving || !ui.cameraReady || !!ui.cameraError}
-              className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {ui.saving ? '⏳ Saving…' : '📸 Capture Manually'}
-            </button>
+            <>
+              <button
+                onClick={manualCapture}
+                disabled={ui.saving || !ui.cameraReady || !!ui.cameraError}
+                className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {ui.saving ? '⏳ Saving…' : '📸 Capture'}
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={ui.saving}
+                className="px-4 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                title="Upload face image from disk"
+              >
+                <Upload className="w-4 h-4" />
+                Upload Photo
+              </button>
+            </>
           ) : (
             <div className="flex-1 py-2.5 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm text-center font-medium">
               ✓ Enrollment Complete!

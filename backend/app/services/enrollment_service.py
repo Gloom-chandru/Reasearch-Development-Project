@@ -40,6 +40,8 @@ class EnrollmentService:
 
         # Decode base64 image
         try:
+            if "," in image_data:
+                image_data = image_data.split(",", 1)[1]
             image_bytes = base64.b64decode(image_data)
             np_arr = np.frombuffer(image_bytes, np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
@@ -100,6 +102,8 @@ class EnrollmentService:
     def check_quality(self, image_data: str) -> Dict:
         """Check face quality in frame without persisting (for live UI feedback)."""
         try:
+            if "," in image_data:
+                image_data = image_data.split(",", 1)[1]
             image_bytes = base64.b64decode(image_data)
             np_arr = np.frombuffer(image_bytes, np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)

@@ -28,7 +28,7 @@ class SubjectCreate(BaseModel):
 def create_subject(
     data: SubjectCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("super_admin", "hod", "coordinator")),
+    current_user: User = Depends(require_role("super_admin", "hod", "coordinator", "faculty")),
 ):
     repo = SubjectRepository(db)
     subject = repo.create(**data.model_dump())

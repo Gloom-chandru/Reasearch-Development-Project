@@ -88,7 +88,7 @@ def enroll_students(
     classroom_id: int,
     payload: EnrollStudentsRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("super_admin", "hod", "coordinator")),
+    current_user: User = Depends(require_role("super_admin", "hod", "coordinator", "faculty")),
 ):
     """Enroll one or more students into a classroom (optionally for a specific subject).
 
@@ -121,7 +121,7 @@ def unenroll_student(
     classroom_id: int,
     enrollment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("super_admin", "hod", "coordinator")),
+    current_user: User = Depends(require_role("super_admin", "hod", "coordinator", "faculty")),
 ):
     """Remove a student's enrollment from a classroom."""
     service = ClassroomService(db)

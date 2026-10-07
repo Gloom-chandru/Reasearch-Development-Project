@@ -29,7 +29,7 @@ def capture_enrollment_frame(
     image_data: str = Form(...),  # base64-encoded JPEG
     capture_index: int = Form(0),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("super_admin", "hod", "coordinator")),
+    current_user: User = Depends(require_role("super_admin", "hod", "coordinator", "faculty")),
 ):
     """Receive a captured frame, check quality, generate embedding, store it."""
     service = EnrollmentService(db)
